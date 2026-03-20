@@ -1,0 +1,74 @@
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
+export const Q = 500000; // QuotaPerUnit — single source of truth
+
+const api = axios.create({
+  baseURL: '',
+  timeout: 30000,
+  withCredentials: true, // CRITICAL: send session cookies on every request
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Attach New-Api-User header (required by backend auth middleware)
+api.interceptors.request.use((config) => {
+  const userId = localStorage.getItem('dist_user_id');
+  if (userId) {
+    config.headers['New-Api-User'] = userId;
+  }
+  return config;
+});
+
+// Global error handler
+api.interceptors.response.use(
+  (res) => {
+    // Handle success:false responses with user-visible errors
+    if (res.data && res.data.success === false && res.data.message) {
+      toast.error(res.data.message);
+    }
+    return res;
+  },
+  (err) => {
+    const msg = err.response?.data?.message || err.message || 'Request failed';
+    if (err.response?.status === 401) {
+      localStorage.removeItem('dist_user_id');
+      // Emit event so AuthContext can clear React state
+      window.dispatchEvent(new Event('auth:logout'));
+      toast.error('Session expired, please log in again');
+    } else {
+      toast.error(msg);
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ===== Public =====
+export const getSiteInfo = () => api.get('/api/dist/site/info');
+export const getSiteModels = () => api.get('/api/dist/site/models');
+export const getSitePricing = () => api.get('/api/dist/site/pricing');
+export const getSitePackages = () => api.get('/api/dist/site/packages');
+
+// ===== Auth =====
+export const register = (data) => api.post('/api/dist/user/register', data);
+export const login = (data) => api.post('/api/dist/user/login', data);
+export const logout = () => api.post('/api/dist/user/logout');
+
+// ===== User =====
+export const getUserSelf = () => api.get('/api/dist/user/self');
+export const getUserUsage = () => api.get('/api/dist/user/usage');
+
+// ===== Tokens =====
+export const getTokens = () => api.get('/api/dist/token/list');
+export const createToken = (data) => api.post('/api/dist/token/create', data);
+export const updateToken = (id, data) => api.put(`/api/dist/token/${id}`, data);
+export const deleteToken = (id) => api.delete(`/api/dist/token/${id}`);
+
+// ===== Purchase =====
+export const redeemCode = (key) => api.post('/api/dist/topup/redeem', { key }); // backend field is "key"
+export const subscribePackage = (packageId) => api.post('/api/dist/package/subscribe', { package_id: packageId });
+
+// ===== Helpers =====
+export const quotaToDollar = (quota) => (quota / Q).toFixed(4);
+export const quotaToDollar6 = (quota) => (quota / Q).toFixed(6);
+
+export default api;
