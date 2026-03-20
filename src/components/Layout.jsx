@@ -10,7 +10,7 @@ export default function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const siteName = site?.name || 'SubRouter';
+  const siteName = site?.name || 'AI Platform';
 
   const navItems = [
     { to: '/', label: 'Home', auth: false },
@@ -140,7 +140,7 @@ export default function Layout() {
       <footer className="border-t border-white/[0.06] mt-auto">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-neutral-500">
-            &copy; {new Date().getFullYear()} {siteName}. Powered by SubRouter.
+            &copy; {new Date().getFullYear()} {siteName}.
           </p>
           <div className="flex items-center gap-4">
             {site?.contact_email && (

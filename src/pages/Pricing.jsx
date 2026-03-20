@@ -36,7 +36,7 @@ export default function Pricing() {
       <div className="text-center mb-10">
         <h1 className="text-3xl font-heading font-bold text-white mb-3">Model Pricing</h1>
         <p className="text-neutral-400 max-w-xl mx-auto">
-          Transparent, pay-as-you-go pricing for all available models. Prices shown per 1K tokens.
+          Transparent, pay-as-you-go pricing for all available models. Prices shown per 1M tokens.
         </p>
       </div>
 
@@ -66,8 +66,8 @@ export default function Pricing() {
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left px-5 py-3.5 font-medium text-neutral-400">Model</th>
-                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Input / 1K tokens</th>
-                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Output / 1K tokens</th>
+                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Input / 1M tokens</th>
+                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Output / 1M tokens</th>
                 <th className="text-center px-5 py-3.5 font-medium text-neutral-400">Status</th>
               </tr>
             </thead>
@@ -78,10 +78,10 @@ export default function Pricing() {
                     <span className="font-mono text-white">{m.display_name || m.model_name}</span>
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
-                    {m.input_price != null ? `$${Number(m.input_price).toFixed(6)}` : '-'}
+                    {m.input_price != null ? `$${(Number(m.input_price) * 1000).toFixed(4)}` : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-neutral-300">
-                    {m.output_price != null ? `$${Number(m.output_price).toFixed(6)}` : '-'}
+                    {m.output_price != null ? `$${(Number(m.output_price) * 1000).toFixed(4)}` : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
