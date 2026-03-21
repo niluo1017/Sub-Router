@@ -120,7 +120,8 @@ export default function Topup() {
     setPaymentLoading(true);
     setPayingMethod(method);
     try {
-      const data = { amount: payAmount, payment_method: method };
+      const returnUrl = window.location.origin + '/topup';
+      const data = { amount: payAmount, payment_method: method, return_url: returnUrl };
 
       if (isStripePayment(method)) {
         // Stripe payment
