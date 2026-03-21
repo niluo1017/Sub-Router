@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTokens, getSiteModels } from '../api';
 import toast from 'react-hot-toast';
@@ -12,6 +12,9 @@ const ConfigExporter = () => {
   const [selectedTool, setSelectedTool] = useState('claudecode');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [modelSearch, setModelSearch] = useState('');
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef(null);
 
   const serverAddress = window.location.origin;
 
@@ -34,6 +37,17 @@ const ConfigExporter = () => {
       loadModelsForToken(selectedToken);
     }
   }, [selectedToken]);
+
+  // Close model dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -280,7 +294,7 @@ print(message.content[0].text)`;
           </select>
         </div>
 
-        {/* Model Selection */}
+        {/* Model Selection — searchable */}
         {availableModels.length > 0 && (
           <div>
             <label className="flex items-center gap-2 text-xs font-medium text-page-label mb-2">
@@ -289,15 +303,40 @@ print(message.content[0].text)`;
               </svg>
               {t('config.selectModel')}
             </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="input"
-            >
-              {availableModels.map((model) => (
-                <option key={model} value={model}>{model}</option>
-              ))}
-            </select>
+            <div className="relative" ref={modelDropdownRef}>
+              <input
+                type="text"
+                value={modelDropdownOpen ? modelSearch : selectedModel}
+                onChange={(e) => { setModelSearch(e.target.value); setModelDropdownOpen(true); }}
+                onFocus={() => { setModelSearch(''); setModelDropdownOpen(true); }}
+                className="input pr-8"
+                placeholder={t('config.searchModel')}
+              />
+              <svg className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-page-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {modelDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-white/10 bg-neutral-900 shadow-xl">
+                  {availableModels
+                    .filter(m => m.toLowerCase().includes(modelSearch.toLowerCase()))
+                    .map((model) => (
+                      <button
+                        key={model}
+                        onClick={() => { setSelectedModel(model); setModelDropdownOpen(false); setModelSearch(''); }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-white/10 ${
+                          model === selectedModel ? 'text-brand-400 bg-brand-500/10' : 'text-page-secondary'
+                        }`}
+                      >
+                        {model}
+                      </button>
+                    ))
+                  }
+                  {availableModels.filter(m => m.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-3 text-xs text-page-muted text-center">{t('config.noModelMatch')}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

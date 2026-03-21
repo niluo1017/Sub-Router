@@ -134,6 +134,8 @@
     "config.loading": "Loading...",
     "config.loginPrompt": "Log in to generate your config",
     "config.loginDesc": "Select your API Key and model to auto-fill config files",
+    "config.searchModel": "Search models...",
+    "config.noModelMatch": "No models match your search",
 
     "pricing.title": "Model Pricing",
     "pricing.subtitle": "Transparent, pay-as-you-go pricing for all available models. Prices shown per 1M tokens.",

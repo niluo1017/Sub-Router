@@ -134,6 +134,8 @@
     "config.loading": "加载中...",
     "config.loginPrompt": "登录后可生成您的专属配置",
     "config.loginDesc": "选择 API Key 和模型，自动填充到配置文件中",
+    "config.searchModel": "搜索模型...",
+    "config.noModelMatch": "没有匹配的模型",
 
     "pricing.title": "模型定价",
     "pricing.subtitle": "透明的按量付费定价。价格以每百万 token 计。",
