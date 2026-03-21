@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTokens, createToken, updateToken, deleteToken } from '../api';
+import ConfigExporter from '../components/ConfigExporter';
 import toast from 'react-hot-toast';
 
 export default function Tokens() {
@@ -206,65 +207,64 @@ export default function Tokens() {
       ) : (
         <div className="space-y-3">
           {tokens.map((token) => (
-            <div key={token.id} className="glass-sm rounded-xl p-5 flex items-center gap-4">
-              {/* Status dot */}
-              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-neutral-600'}`} />
+            <div key={token.id} className="glass-sm rounded-xl p-5">
+              <div className="flex items-center gap-4">
+                {/* Status dot */}
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-neutral-600'}`} />
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-page">{token.name}</p>
-                <p className="text-xs font-mono text-page-muted mt-1">
-                  sk-***
-                </p>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-page">{token.name}</p>
+                </div>
+
+                {/* Created time */}
+                <span className="text-xs text-page-muted hidden md:block">
+                  {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
+                </span>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggle(token)}
+                    className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                      token.status === 1
+                        ? 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                        : 'border-neutral-600 text-page-secondary hover:bg-neutral-800'
+                    }`}
+                  >
+                    {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(token)}
+                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    {t('tokens.delete')}
+                  </button>
+                </div>
               </div>
 
-              {/* Created time */}
-              <span className="text-xs text-page-muted hidden md:block">
-                {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
-              </span>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleToggle(token)}
-                  className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
-                    token.status === 1
-                      ? 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-                      : 'border-neutral-600 text-page-secondary hover:bg-neutral-800'
-                  }`}
-                >
-                  {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(token)}
-                  className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  {t('tokens.delete')}
-                </button>
-              </div>
+              {/* Key row — always visible with copy button */}
+              {token.key && (
+                <div className="mt-3 flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2">
+                  <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
+                    sk-{token.key}
+                  </code>
+                  <button
+                    onClick={() => handleCopy('sk-' + token.key)}
+                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-white/10 text-page-secondary hover:bg-white/20 hover:text-page transition-colors"
+                  >
+                    {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* API Usage Note */}
-      <div className="glass rounded-2xl p-6 mt-8">
-        <h3 className="text-sm font-semibold text-page mb-3">{t('tokens.quickStart')}</h3>
-        <div className="bg-black/40 rounded-xl p-4 font-mono text-sm">
-          <p className="text-page-muted">{t('tokens.quickStartComment')}</p>
-          <p className="text-green-400 mt-2">
-            curl {window.location.origin}/v1/chat/completions \
-          </p>
-          <p className="text-page-label pl-4">
-            -H "Authorization: Bearer sk-your-key" \
-          </p>
-          <p className="text-page-label pl-4">
-            -H "Content-Type: application/json" \
-          </p>
-          <p className="text-page-label pl-4">
-            -d '{`{"model":"gpt-4o","messages":[{"role":"user","content":"Hello!"}]}`}'
-          </p>
-        </div>
+      {/* Config File Generator */}
+      <div className="mt-8">
+        <ConfigExporter />
       </div>
     </div>
   );
