@@ -6,6 +6,10 @@ import { useSite } from '../../context/SiteContext';
 import { getSiteModels, getSitePackages } from '../../api';
 import CountUp from '../../components/bits/CountUp';
 import FadeContent from '../../components/bits/FadeContent';
+import ShinyText from '../../components/bits/ShinyText';
+import BlurText from '../../components/bits/BlurText';
+import SpotlightCard from '../../components/bits/SpotlightCard';
+import StarBorder from '../../components/bits/StarBorder';
 
 export default function CleanHome() {
   const { t } = useTranslation();
@@ -28,12 +32,23 @@ export default function CleanHome() {
         <FadeContent blur duration={600} delay={100}>
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              {t('home.lightningFast')}
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <ShinyText
+                text={t('home.lightningFast')}
+                speed={4}
+                color="#2563eb"
+                shineColor="rgba(59,130,246,0.3)"
+                className="text-sm font-medium"
+              />
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight mb-6">
-              {site?.name || t('home.defaultHeroTitle')}
+              <BlurText
+                text={site?.name || t('home.defaultHeroTitle')}
+                delay={60}
+                animateBy="words"
+                className="text-gray-900"
+              />
             </h1>
 
             <p className="text-lg text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed">
@@ -42,8 +57,10 @@ export default function CleanHome() {
 
             <div className="flex items-center justify-center gap-3">
               {user ? (
-                <Link to="/dashboard" className="px-7 py-3 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm">
-                  {t('home.goToDashboard')} →
+                <Link to="/dashboard">
+                  <StarBorder as="div" color="#3b82f6" speed="5s" className="!rounded-xl !px-7 !py-3 text-sm font-medium text-blue-700">
+                    {t('home.goToDashboard')} →
+                  </StarBorder>
                 </Link>
               ) : (
                 <>
@@ -94,35 +111,41 @@ export default function CleanHome() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-2xl p-7 border border-gray-100 hover:shadow-lg hover:shadow-gray-100/50 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+              <SpotlightCard className="!bg-white !rounded-2xl !p-0 !border-gray-100" spotlightColor="rgba(59,130,246,0.08)">
+                <div className="p-7">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.lightningFast')}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{t('home.lightningFastDesc')}</p>
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.lightningFast')}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{t('home.lightningFastDesc')}</p>
-              </div>
+              </SpotlightCard>
 
-              <div className="bg-white rounded-2xl p-7 border border-gray-100 hover:shadow-lg hover:shadow-gray-100/50 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center mb-5">
-                  <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+              <SpotlightCard className="!bg-white !rounded-2xl !p-0 !border-gray-100" spotlightColor="rgba(99,102,241,0.08)">
+                <div className="p-7">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center mb-5">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.securePrivate')}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{t('home.securePrivateDesc')}</p>
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.securePrivate')}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{t('home.securePrivateDesc')}</p>
-              </div>
+              </SpotlightCard>
 
-              <div className="bg-white rounded-2xl p-7 border border-gray-100 hover:shadow-lg hover:shadow-gray-100/50 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-5">
-                  <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              <SpotlightCard className="!bg-white !rounded-2xl !p-0 !border-gray-100" spotlightColor="rgba(16,185,129,0.08)">
+                <div className="p-7">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-5">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.payAsYouGo')}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{t('home.payAsYouGoDesc')}</p>
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{t('home.payAsYouGo')}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{t('home.payAsYouGoDesc')}</p>
-              </div>
+              </SpotlightCard>
             </div>
           </FadeContent>
         </div>
@@ -171,29 +194,35 @@ export default function CleanHome() {
 
               <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {packages.filter(p => p.enabled).slice(0, 3).map((pkg, i) => (
-                  <div key={pkg.id} className={`bg-white rounded-2xl p-6 flex flex-col border transition-all hover:shadow-lg hover:shadow-gray-100/50 ${
-                    i === 1 ? 'border-blue-200 shadow-md shadow-blue-50' : 'border-gray-100'
-                  }`}>
-                    {i === 1 && <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-2">Popular</span>}
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{pkg.name}</h3>
-                    {pkg.description && <p className="text-sm text-gray-500 mb-4">{pkg.description}</p>}
-                    <div className="mt-auto pt-4">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-gray-900">${pkg.price}</span>
-                        {pkg.original_price > pkg.price && (
-                          <span className="text-sm text-gray-400 line-through">${pkg.original_price}</span>
-                        )}
+                  <SpotlightCard
+                    key={pkg.id}
+                    className={`!bg-white !rounded-2xl !p-0 !flex !flex-col ${
+                      i === 1 ? '!border-blue-200 !shadow-md !shadow-blue-50' : '!border-gray-100'
+                    }`}
+                    spotlightColor={i === 1 ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.03)'}
+                  >
+                    <div className="p-6 flex-1 flex flex-col">
+                      {i === 1 && <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-2">Popular</span>}
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{pkg.name}</h3>
+                      {pkg.description && <p className="text-sm text-gray-500 mb-4">{pkg.description}</p>}
+                      <div className="mt-auto pt-4">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold text-gray-900">${pkg.price}</span>
+                          {pkg.original_price > pkg.price && (
+                            <span className="text-sm text-gray-400 line-through">${pkg.original_price}</span>
+                          )}
+                        </div>
+                        {pkg.duration > 0 && <p className="text-xs text-gray-400 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                       </div>
-                      {pkg.duration > 0 && <p className="text-xs text-gray-400 mt-1">{t('home.days', { count: pkg.duration })}</p>}
+                      <Link to={user ? '/packages' : '/register'} className={`mt-4 py-2.5 rounded-xl font-medium text-sm text-center transition-colors ${
+                        i === 1
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}>
+                        {user ? t('home.subscribe') : t('home.getStarted')}
+                      </Link>
                     </div>
-                    <Link to={user ? '/packages' : '/register'} className={`mt-4 py-2.5 rounded-xl font-medium text-sm text-center transition-colors ${
-                      i === 1
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}>
-                      {user ? t('home.subscribe') : t('home.getStarted')}
-                    </Link>
-                  </div>
+                  </SpotlightCard>
                 ))}
               </div>
             </FadeContent>

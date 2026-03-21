@@ -29,6 +29,10 @@ const themeRegistry = {
     Home: React.lazy(() => import('../themes/corporate/Home')),
     Layout: React.lazy(() => import('../themes/corporate/Layout')),
   },
+  claude: {
+    Home: React.lazy(() => import('../themes/claude/Home')),
+    Layout: React.lazy(() => import('../themes/claude/Layout')),
+  },
 };
 
 // Full-screen loading spinner shown while site info is being fetched
