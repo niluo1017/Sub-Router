@@ -189,6 +189,13 @@
     "topup.amount": "Amount",
     "topup.chain": "Chain",
     "topup.waitingPayment": "Waiting for payment...",
-    "topup.close": "Close"
+    "topup.close": "Close",
+    "topup.selectChain": "Please select a blockchain network",
+    "topup.selectToken": "Please select a token",
+    "topup.token": "Token",
+    "topup.payWith": "Pay with",
+    "topup.payNow": "Pay",
+    "topup.quotaIncluded": "{{count}} quota included",
+    "topup.creemPayment": "Creem Payment"
   }
 }

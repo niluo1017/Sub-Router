@@ -189,6 +189,13 @@
     "topup.amount": "金额",
     "topup.chain": "链",
     "topup.waitingPayment": "等待支付中...",
-    "topup.close": "关闭"
+    "topup.close": "关闭",
+    "topup.selectChain": "请选择区块链网络",
+    "topup.selectToken": "请选择代币",
+    "topup.token": "代币",
+    "topup.payWith": "使用",
+    "topup.payNow": "支付",
+    "topup.quotaIncluded": "含 {{count}} 额度",
+    "topup.creemPayment": "Creem 支付"
   }
 }
