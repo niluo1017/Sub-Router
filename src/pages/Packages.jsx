@@ -42,8 +42,13 @@ export default function Packages() {
         setConfirmPkg(null);
         // Refresh user data to update balance
         await refreshUser();
+      } else {
+        // Non-2xx with success=false handled by interceptor, but handle edge case
+        toast.error(res.data.message || t('common.requestFailed'));
       }
-    } catch (e) { /* interceptor */ }
+    } catch (e) {
+      // Error already shown by axios interceptor
+    }
     setSubscribing(null);
   };
 
