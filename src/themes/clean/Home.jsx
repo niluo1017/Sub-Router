@@ -83,19 +83,19 @@ export default function CleanHome() {
               <div className="text-3xl font-bold text-gray-900">
                 <CountUp from={0} to={enabledModels.length || 50} duration={2} />+
               </div>
-              <p className="text-sm text-gray-400 mt-1">{t('home.aiModels')}</p>
+              <p className="text-sm text-gray-500 mt-1">{t('home.aiModels')}</p>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900">
                 <CountUp from={0} to={99.9} duration={2.5} />%
               </div>
-              <p className="text-sm text-gray-400 mt-1">{t('home.uptime')}</p>
+              <p className="text-sm text-gray-500 mt-1">{t('home.uptime')}</p>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900">
                 &lt;<CountUp from={200} to={50} duration={2} direction="down" />ms
               </div>
-              <p className="text-sm text-gray-400 mt-1">{t('home.latency')}</p>
+              <p className="text-sm text-gray-500 mt-1">{t('home.latency')}</p>
             </div>
           </div>
         </FadeContent>
@@ -209,10 +209,10 @@ export default function CleanHome() {
                         <div className="flex items-baseline gap-1">
                           <span className="text-3xl font-bold text-gray-900">${pkg.price}</span>
                           {pkg.original_price > pkg.price && (
-                            <span className="text-sm text-gray-400 line-through">${pkg.original_price}</span>
+                            <span className="text-sm text-gray-500 line-through">${pkg.original_price}</span>
                           )}
                         </div>
-                        {pkg.duration > 0 && <p className="text-xs text-gray-400 mt-1">{t('home.days', { count: pkg.duration })}</p>}
+                        {pkg.duration > 0 && <p className="text-xs text-gray-500 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                       </div>
                       <Link to={user ? '/packages' : '/register'} className={`mt-4 py-2.5 rounded-xl font-medium text-sm text-center transition-colors ${
                         i === 1

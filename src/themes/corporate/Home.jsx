@@ -219,10 +219,10 @@ export default function CorporateHome() {
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-4xl font-bold text-slate-900">${pkg.price}</span>
                             {pkg.original_price > pkg.price && (
-                              <span className="text-sm text-slate-400 line-through">${pkg.original_price}</span>
+                              <span className="text-sm text-slate-500 line-through">${pkg.original_price}</span>
                             )}
                           </div>
-                          {pkg.duration > 0 && <p className="text-sm text-slate-400 mt-1">{t('home.days', { count: pkg.duration })}</p>}
+                          {pkg.duration > 0 && <p className="text-sm text-slate-500 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                         </div>
                       </div>
                       <div className="px-8 pb-8">
