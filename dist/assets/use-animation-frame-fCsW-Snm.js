@@ -1,1 +1,0 @@
-import{r as e}from"./index-BKzMfs0Y.js";import{M as a,f as u,c}from"./CountUp-1XaQYcAK.js";function p(r){const t=e.useRef(0),{isStatic:o}=e.useContext(a);e.useEffect(()=>{if(o)return;const n=({timestamp:i,delta:s})=>{t.current||(t.current=i),r(i-t.current,s)};return u.update(n,!0),()=>c(n)},[r])}export{p as u};
