@@ -2,11 +2,19 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   darkMode: 'class',
+  safelist: [
+    // Dark theme uses dynamic accent colors
+    { pattern: /border-(emerald|cyan|violet)-500\/(10|15|20|25)/ },
+    { pattern: /bg-(emerald|cyan|violet)-500\/(10|15)/ },
+    { pattern: /text-(emerald|cyan|violet)-400/ },
+    { pattern: /from-(emerald|cyan|violet)-500\/(50|10)/ },
+    { pattern: /to-(emerald|cyan|violet|teal)-500\/(10)/ },
+  ],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        heading: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'Noto Sans SC', 'system-ui', '-apple-system', 'sans-serif'],
+        heading: ['Inter', 'Noto Sans SC', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       colors: {

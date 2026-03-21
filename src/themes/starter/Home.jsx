@@ -9,7 +9,6 @@ import BlurText from '../../components/bits/BlurText';
 import SpotlightCard from '../../components/bits/SpotlightCard';
 import CountUp from '../../components/bits/CountUp';
 import StarBorder from '../../components/bits/StarBorder';
-import ShinyText from '../../components/bits/ShinyText';
 
 export default function StarterHome() {
   const { t } = useTranslation();
@@ -40,7 +39,7 @@ export default function StarterHome() {
             <GradientText
               colors={['#818cf8', '#c084fc', '#f472b6', '#818cf8']}
               animationSpeed={6}
-              className="text-5xl md:text-7xl font-heading font-extrabold leading-tight"
+              className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight"
             >
               {site?.name || t('home.defaultHeroTitle')}
             </GradientText>
@@ -48,7 +47,7 @@ export default function StarterHome() {
 
           <BlurText
             text={t('home.heroSubtitle')}
-            className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-10"
+            className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-10 leading-relaxed"
             delay={50}
             animateBy="words"
           />
@@ -99,7 +98,7 @@ export default function StarterHome() {
       {/* Features Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.whyChooseUs')}</h2>
+          <h2 className="text-3xl font-bold text-white mb-3">{t('home.whyChooseUs')}</h2>
           <p className="text-neutral-400">{t('home.whyChooseUsDesc')}</p>
         </div>
 
@@ -140,7 +139,7 @@ export default function StarterHome() {
       {enabledModels.length > 0 && (
         <section className="relative max-w-7xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.availableModels')}</h2>
+            <h2 className="text-3xl font-bold text-white mb-3">{t('home.availableModels')}</h2>
             <p className="text-neutral-400">
               {t('home.availableModelsDesc', { count: enabledModels.length })}
             </p>
@@ -174,7 +173,7 @@ export default function StarterHome() {
       {packages.length > 0 && (
         <section className="relative max-w-7xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.plansPackages')}</h2>
+            <h2 className="text-3xl font-bold text-white mb-3">{t('home.plansPackages')}</h2>
             <p className="text-neutral-400">{t('home.choosePlan')}</p>
           </div>
 
@@ -213,7 +212,7 @@ export default function StarterHome() {
         <div className="glass rounded-3xl p-12 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-purple-600/10" />
           <div className="relative z-10">
-            <h2 className="text-3xl font-heading font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               {t('home.readyToStart')}
             </h2>
             <p className="text-neutral-400 mb-8 max-w-md mx-auto">

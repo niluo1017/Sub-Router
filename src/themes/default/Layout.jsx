@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
+import LanguageSwitch from '../../components/LanguageSwitch';
 
 export default function DefaultLayout() {
   const { t } = useTranslation();
@@ -25,23 +26,23 @@ export default function DefaultLayout() {
   const visibleNavItems = navItems.filter((n) => !n.auth || user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a1a]">
+    <div className="min-h-screen flex flex-col bg-[#09090b]">
       {/* Announcement Banner */}
       {site?.announcement && (
-        <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 border-b border-white/10 text-center py-2.5 px-4">
-          <p className="text-sm text-neutral-200">{site.announcement}</p>
+        <div className="bg-gradient-to-r from-violet-600/10 via-blue-600/10 to-cyan-600/10 border-b border-white/[0.06] text-center py-2.5 px-4">
+          <p className="text-sm text-neutral-300">{site.announcement}</p>
         </div>
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#0a0a1a]/80 border-b border-white/[0.08]">
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#09090b]/80 border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             {site?.logo ? (
               <img src={site.logo} alt={siteName} className="h-8 w-auto" />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-500/20">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20">
                 {siteName.charAt(0)}
               </div>
             )}
@@ -51,14 +52,14 @@ export default function DefaultLayout() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1 bg-white/5 rounded-full px-2 py-1">
+          <nav className="hidden md:flex items-center gap-1 bg-white/[0.04] rounded-full px-1.5 py-1 border border-white/[0.06]">
             {visibleNavItems.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
                 className={`px-4 py-1.5 text-sm rounded-full transition-all ${
                   location.pathname === n.to
-                    ? 'text-white bg-white/10'
+                    ? 'text-white bg-white/[0.08]'
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
@@ -67,8 +68,10 @@ export default function DefaultLayout() {
             ))}
           </nav>
 
-          {/* Auth + Mobile toggle */}
-          <div className="flex items-center gap-3">
+          {/* Auth + Lang + Mobile toggle */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitch className="text-neutral-400 hover:text-white hover:bg-white/5" />
+
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-neutral-400 hidden sm:block">
@@ -83,7 +86,7 @@ export default function DefaultLayout() {
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-sm text-neutral-300 hover:text-white transition-colors px-3 py-1.5 hidden sm:block">
+                <Link to="/login" className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-1.5 hidden sm:block">
                   {t('nav.login')}
                 </Link>
                 <Link to="/register" className="px-5 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-neutral-100 transition-all">
@@ -109,7 +112,7 @@ export default function DefaultLayout() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/[0.08] bg-[#0a0a1a]/95 backdrop-blur-2xl">
+          <div className="md:hidden border-t border-white/[0.06] bg-[#09090b]/95 backdrop-blur-2xl">
             <nav className="max-w-7xl mx-auto px-6 py-3 flex flex-col gap-1">
               {visibleNavItems.map((n) => (
                 <Link
@@ -134,7 +137,7 @@ export default function DefaultLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-white/[0.08] mt-auto bg-[#0a0a1a]">
+      <footer className="border-t border-white/[0.06] mt-auto bg-[#09090b]">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-neutral-500">&copy; {new Date().getFullYear()} {siteName}.</p>
           <div className="flex items-center gap-4">

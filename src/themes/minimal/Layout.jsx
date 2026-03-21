@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
+import LanguageSwitch from '../../components/LanguageSwitch';
 
 export default function MinimalLayout() {
   const { t } = useTranslation();
@@ -63,7 +64,9 @@ export default function MinimalLayout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <LanguageSwitch className="text-neutral-500 hover:text-white hover:bg-white/5" />
+
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-neutral-500 hidden sm:block">{user.display_name || user.username}</span>

@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
+import LanguageSwitch from '../../components/LanguageSwitch';
 
 export default function StarterLayout() {
   const { t } = useTranslation();
@@ -59,8 +60,10 @@ export default function StarterLayout() {
             ))}
           </nav>
 
-          {/* Auth + Mobile toggle */}
-          <div className="flex items-center gap-3">
+          {/* Auth + Lang + Mobile toggle */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitch className="text-neutral-400 hover:text-white hover:bg-white/5" />
+
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-neutral-400 hidden sm:block">

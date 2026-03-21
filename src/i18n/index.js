@@ -13,7 +13,7 @@ i18n
     fallbackLng: 'en',
     interpolation: { escapeValue: false },
     detection: {
-      order: ['navigator', 'htmlTag', 'querystring'],
+      order: ['localStorage', 'navigator', 'htmlTag', 'querystring'],
       caches: ['localStorage'],
     },
   });

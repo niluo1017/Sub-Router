@@ -23,10 +23,35 @@ const themeRegistry = {
   },
 };
 
+// Full-screen loading spinner shown while site info is being fetched
+// Prevents theme flash (rendering default theme before API returns the real one)
+function ThemeLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <div className="w-8 h-8 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+    </div>
+  );
+}
+
 export function ThemeProvider({ children }) {
-  const { site } = useSite();
+  const { site, loading } = useSite();
+
+  // Block rendering until site info is loaded so we know the correct theme
+  if (loading) {
+    return <ThemeLoading />;
+  }
+
   const themeName = site?.theme_template || 'starter';
 
+  return (
+    <ThemeInner themeName={themeName}>
+      {children}
+    </ThemeInner>
+  );
+}
+
+// Inner component to keep useMemo stable after loading completes
+function ThemeInner({ themeName, children }) {
   const theme = useMemo(() => {
     const t = themeRegistry[themeName] || themeRegistry.starter;
     return { name: themeName, ...t };
