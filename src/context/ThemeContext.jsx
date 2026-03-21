@@ -21,6 +21,14 @@ const themeRegistry = {
     Home: React.lazy(() => import('../themes/minimal/Home')),
     Layout: React.lazy(() => import('../themes/minimal/Layout')),
   },
+  clean: {
+    Home: React.lazy(() => import('../themes/clean/Home')),
+    Layout: React.lazy(() => import('../themes/clean/Layout')),
+  },
+  corporate: {
+    Home: React.lazy(() => import('../themes/corporate/Home')),
+    Layout: React.lazy(() => import('../themes/corporate/Layout')),
+  },
 };
 
 // Full-screen loading spinner shown while site info is being fetched
