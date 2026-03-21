@@ -16,7 +16,6 @@ export default function ClaudeHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -231,9 +230,9 @@ export default function ClaudeHome() {
                       {pkg.description && <p className="text-sm text-[#6B5D4F] mb-4">{pkg.description}</p>}
                       <div className="mt-auto pt-4">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold text-[#3D3024]">{cs}{pkg.price}</span>
+                          <span className="text-3xl font-bold text-[#3D3024]">${pkg.price}</span>
                           {pkg.original_price > pkg.price && (
-                            <span className="text-sm text-[#8B7D6E] line-through">{cs}{pkg.original_price}</span>
+                            <span className="text-sm text-[#8B7D6E] line-through">${pkg.original_price}</span>
                           )}
                         </div>
                         {pkg.duration > 0 && <p className="text-xs text-[#8B7D6E] mt-1">{t('home.days', { count: pkg.duration })}</p>}

@@ -16,7 +16,6 @@ export default function Topup() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
 
   const [usage, setUsage] = useState(null);
   const [topupInfo, setTopupInfo] = useState(null);
@@ -326,7 +325,7 @@ export default function Topup() {
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(34,197,94,0.15)">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
-            {cs}<CountUp from={0} to={balanceDollars} duration={1.5} />
+            $<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
         </SpotlightCard>
@@ -334,7 +333,7 @@ export default function Topup() {
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(129,140,248,0.15)">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
-            {cs}<CountUp from={0} to={usedQuota / Q} duration={1.5} />
+            $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
           </div>
         </SpotlightCard>
 
@@ -373,7 +372,7 @@ export default function Topup() {
                       : 'glass-sm text-page-label hover:text-page hover:bg-white/[0.08]'
                   }`}
                 >
-                  {cs}{val}
+                  ${val}
                 </button>
               ))}
             </div>
@@ -400,7 +399,7 @@ export default function Topup() {
               <p className="text-xs text-page-muted mt-2">{t('topup.calculating')}</p>
             ) : payAmount ? (
               <p className="text-xs text-page-secondary mt-2">
-                {t('topup.payAmountLabel')}: <span className="text-green-400 font-medium">{cs}{payAmount}</span>
+                {t('topup.payAmountLabel')}: <span className="text-green-400 font-medium">${payAmount}</span>
               </p>
             ) : null}
           </div>
@@ -444,7 +443,7 @@ export default function Topup() {
               >
                 <h3 className="text-sm font-semibold text-page mb-1">{product.name}</h3>
                 <p className="text-xl font-bold text-green-400 mb-1">
-                  {cs}{product.price} <span className="text-xs text-page-muted font-normal">{product.currency || 'USD'}</span>
+                  ${product.price} <span className="text-xs text-page-muted font-normal">{product.currency || 'USD'}</span>
                 </p>
                 {product.quota && (
                   <p className="text-xs text-page-secondary">{t('topup.quotaIncluded') || `${product.quota} quota`}</p>
@@ -461,7 +460,7 @@ export default function Topup() {
               >
                 {paymentLoading && payingMethod === 'creem'
                   ? t('topup.processing')
-                  : `${t('topup.payNow') || 'Pay'} ${cs}${selectedCreemProduct.price}`}
+                  : `${t('topup.payNow') || 'Pay'} $${selectedCreemProduct.price}`}
               </button>
             </div>
           )}
@@ -593,7 +592,7 @@ export default function Topup() {
               {history.map((item, i) => (
                 <div key={i} className="flex items-center justify-between glass-sm rounded-xl px-4 py-3">
                   <div>
-                    <p className="text-sm text-page">{cs}{item.amount}</p>
+                    <p className="text-sm text-page">${item.amount}</p>
                     <p className="text-xs text-page-muted">
                       {new Date(item.create_time * 1000).toLocaleString()} · {item.payment_method || t('topup.redeemCode')}
                     </p>

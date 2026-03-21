@@ -14,7 +14,6 @@ export default function StarterHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -187,9 +186,9 @@ export default function StarterHome() {
                 )}
                 <div className="mt-auto pt-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-white">{cs}{pkg.price}</span>
+                    <span className="text-3xl font-bold text-white">${pkg.price}</span>
                     {pkg.original_price > pkg.price && (
-                      <span className="text-sm text-neutral-500 line-through">{cs}{pkg.original_price}</span>
+                      <span className="text-sm text-neutral-500 line-through">${pkg.original_price}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && (

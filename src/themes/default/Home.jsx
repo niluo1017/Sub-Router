@@ -14,7 +14,6 @@ export default function DefaultHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -182,9 +181,9 @@ export default function DefaultHome() {
                 {pkg.description && <p className="text-sm text-neutral-400 mb-4">{pkg.description}</p>}
                 <div className="mt-auto pt-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-white">{cs}{pkg.price}</span>
+                    <span className="text-3xl font-bold text-white">${pkg.price}</span>
                     {pkg.original_price > pkg.price && (
-                      <span className="text-sm text-neutral-500 line-through">{cs}{pkg.original_price}</span>
+                      <span className="text-sm text-neutral-500 line-through">${pkg.original_price}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && <p className="text-xs text-neutral-500 mt-1">{t('home.days', { count: pkg.duration })}</p>}

@@ -11,7 +11,6 @@ export default function MinimalHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -143,9 +142,9 @@ export default function MinimalHome() {
                   <h3 className="text-base font-semibold text-white">{pkg.name}</h3>
                   {pkg.description && <p className="text-sm text-neutral-500 mt-1">{pkg.description}</p>}
                   <div className="mt-auto pt-6">
-                    <span className="text-3xl font-bold text-white">{cs}{pkg.price}</span>
+                    <span className="text-3xl font-bold text-white">${pkg.price}</span>
                     {pkg.original_price > pkg.price && (
-                      <span className="text-sm text-neutral-600 line-through ml-2">{cs}{pkg.original_price}</span>
+                      <span className="text-sm text-neutral-600 line-through ml-2">${pkg.original_price}</span>
                     )}
                     {pkg.duration > 0 && <p className="text-xs text-neutral-600 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                   </div>

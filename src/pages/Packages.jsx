@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { useSite } from '../context/SiteContext';
 import { getSitePackages, subscribePackage, getActiveSubscriptions, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import toast from 'react-hot-toast';
@@ -22,8 +21,6 @@ function formatDate(unix) {
 export default function Packages() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
-  const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const navigate = useNavigate();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +138,7 @@ export default function Packages() {
                         style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-xs text-page-secondary whitespace-nowrap">
-                      {cs}{(remain / Q).toFixed(2)} / {cs}{(total / Q).toFixed(2)}
+                      ${(remain / Q).toFixed(2)} / ${(total / Q).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -188,9 +185,9 @@ export default function Packages() {
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-page">{cs}{Number(pkg.price).toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-page">${Number(pkg.price).toFixed(2)}</span>
                     {pkg.original_price > 0 && pkg.original_price > pkg.price && (
-                      <span className="text-lg text-page-muted line-through">{cs}{Number(pkg.original_price).toFixed(2)}</span>
+                      <span className="text-lg text-page-muted line-through">${Number(pkg.original_price).toFixed(2)}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && (
@@ -273,7 +270,7 @@ export default function Packages() {
               </div>
             )}
             <p className="text-sm text-page-secondary mb-4">
-              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>{cs}{userBalance.toFixed(2)}</span>
+              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
             </p>
             {insufficient && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">

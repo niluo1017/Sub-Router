@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { useSite } from '../context/SiteContext';
 import { getUserUsage, redeemCode, Q, quotaToDollar } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import CountUp from '../components/bits/CountUp';
@@ -12,8 +11,6 @@ import toast from 'react-hot-toast';
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
-  const { site } = useSite();
-  const cs = site?.currency_symbol || '¥';
   const [usage, setUsage] = useState(null);
   const [redeemInput, setRedeemInput] = useState('');
   const [redeeming, setRedeeming] = useState(false);
@@ -64,7 +61,7 @@ export default function Dashboard() {
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(34,197,94,0.15)">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
-            {cs}<CountUp from={0} to={balanceDollars} duration={1.5} />
+            $<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
         </SpotlightCard>
@@ -72,7 +69,7 @@ export default function Dashboard() {
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(129,140,248,0.15)">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
-            {cs}<CountUp from={0} to={usedQuota / Q} duration={1.5} />
+            $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: usedQuota.toLocaleString() })}</p>
         </SpotlightCard>
