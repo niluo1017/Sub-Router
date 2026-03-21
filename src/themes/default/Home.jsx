@@ -7,7 +7,7 @@ import { getSiteModels, getSitePackages } from '../../api';
 import Aurora from '../../components/bits/Aurora';
 import SplitText from '../../components/bits/SplitText';
 import RotatingText from '../../components/bits/RotatingText';
-import TiltedCard from '../../components/bits/TiltedCard';
+import SpotlightCard from '../../components/bits/SpotlightCard';
 import CountUp from '../../components/bits/CountUp';
 
 export default function DefaultHome() {
@@ -96,39 +96,41 @@ export default function DefaultHome() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { icon: (
-              <svg className="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            ), title: t('home.lightningFast'), desc: t('home.lightningFastDesc'), gradient: 'from-violet-500/10 to-blue-500/10', border: 'border-violet-500/20' },
-            { icon: (
-              <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            ), title: t('home.securePrivate'), desc: t('home.securePrivateDesc'), gradient: 'from-blue-500/10 to-cyan-500/10', border: 'border-blue-500/20' },
-            { icon: (
-              <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ), title: t('home.payAsYouGo'), desc: t('home.payAsYouGoDesc'), gradient: 'from-cyan-500/10 to-teal-500/10', border: 'border-cyan-500/20' },
-          ].map((f, i) => (
-            <TiltedCard
-              key={i}
-              rotateAmplitude={6}
-              scaleOnHover={1.02}
-              borderRadius="16px"
-              className="w-full"
-            >
-              <div className={`p-6 rounded-2xl bg-gradient-to-br ${f.gradient} border ${f.border} h-full`}>
-                <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center mb-4">
-                  {f.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
-                <p className="text-sm text-neutral-400 leading-relaxed">{f.desc}</p>
+          <SpotlightCard className="!bg-gradient-to-br !from-violet-500/10 !to-blue-500/10 !border-violet-500/20" spotlightColor="rgba(139,92,246,0.1)">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-            </TiltedCard>
-          ))}
+              <h3 className="text-lg font-semibold text-white mb-2">{t('home.lightningFast')}</h3>
+              <p className="text-sm text-neutral-400 leading-relaxed">{t('home.lightningFastDesc')}</p>
+            </div>
+          </SpotlightCard>
+
+          <SpotlightCard className="!bg-gradient-to-br !from-blue-500/10 !to-cyan-500/10 !border-blue-500/20" spotlightColor="rgba(59,130,246,0.1)">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">{t('home.securePrivate')}</h3>
+              <p className="text-sm text-neutral-400 leading-relaxed">{t('home.securePrivateDesc')}</p>
+            </div>
+          </SpotlightCard>
+
+          <SpotlightCard className="!bg-gradient-to-br !from-cyan-500/10 !to-teal-500/10 !border-cyan-500/20" spotlightColor="rgba(6,182,212,0.1)">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">{t('home.payAsYouGo')}</h3>
+              <p className="text-sm text-neutral-400 leading-relaxed">{t('home.payAsYouGoDesc')}</p>
+            </div>
+          </SpotlightCard>
         </div>
       </section>
 
