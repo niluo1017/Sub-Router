@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getUserUsage, redeemCode, Q, quotaToDollar } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
@@ -8,6 +9,7 @@ import ShinyText from '../components/bits/ShinyText';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const [usage, setUsage] = useState(null);
   const [redeemInput, setRedeemInput] = useState('');
@@ -29,7 +31,7 @@ export default function Dashboard() {
     try {
       const res = await redeemCode(redeemInput.trim());
       if (res.data.success) {
-        toast.success('Code redeemed successfully!');
+        toast.success(t('dashboard.redeemSuccess'));
         setRedeemInput('');
         // Refresh both usage AND user data to update balance
         await Promise.all([loadUsage(), refreshUser()]);
@@ -49,31 +51,31 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="mb-8">
         <h1 className="text-2xl font-heading font-bold text-white mb-1">
-          Welcome, <ShinyText text={user?.display_name || user?.username || 'User'} className="!inline" speed={3} color="#a5b4fc" shineColor="#e0e7ff" />
+          {t('dashboard.welcome')} <ShinyText text={user?.display_name || user?.username || 'User'} className="!inline" speed={3} color="#a5b4fc" shineColor="#e0e7ff" />
         </h1>
-        <p className="text-sm text-neutral-400">Manage your API usage, keys, and account</p>
+        <p className="text-sm text-neutral-400">{t('dashboard.manageDesc')}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(34,197,94,0.15)">
-          <p className="text-sm text-neutral-400 mb-2">Balance</p>
+          <p className="text-sm text-neutral-400 mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-white">
             $<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
-          <p className="text-xs text-neutral-500 mt-1">{quota.toLocaleString()} quota units</p>
+          <p className="text-xs text-neutral-500 mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
         </SpotlightCard>
 
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(129,140,248,0.15)">
-          <p className="text-sm text-neutral-400 mb-2">Used</p>
+          <p className="text-sm text-neutral-400 mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-white">
             $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
           </div>
-          <p className="text-xs text-neutral-500 mt-1">{usedQuota.toLocaleString()} quota units</p>
+          <p className="text-xs text-neutral-500 mt-1">{t('dashboard.quotaUnits', { count: usedQuota.toLocaleString() })}</p>
         </SpotlightCard>
 
         <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(244,114,182,0.15)">
-          <p className="text-sm text-neutral-400 mb-2">Total Requests</p>
+          <p className="text-sm text-neutral-400 mb-2">{t('dashboard.totalRequests')}</p>
           <div className="text-3xl font-bold text-white">
             <CountUp from={0} to={requestCount} duration={1.5} />
           </div>
@@ -84,40 +86,40 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Redeem Code */}
         <div className="glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Redeem Code</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t('dashboard.redeemCode')}</h2>
           <form onSubmit={handleRedeem} className="flex gap-3">
             <input
               type="text"
               value={redeemInput}
               onChange={(e) => setRedeemInput(e.target.value)}
               className="input flex-1"
-              placeholder="Enter redemption code"
+              placeholder={t('dashboard.enterCode')}
             />
             <button type="submit" disabled={redeeming} className="btn-primary whitespace-nowrap">
-              {redeeming ? 'Redeeming...' : 'Redeem'}
+              {redeeming ? t('dashboard.redeeming') : t('dashboard.redeem')}
             </button>
           </form>
         </div>
 
         {/* Quick Links */}
         <div className="glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Quick Links</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t('dashboard.quickLinks')}</h2>
           <div className="grid grid-cols-2 gap-3">
             <Link to="/tokens" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
-              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">API Keys</p>
-              <p className="text-xs text-neutral-500">Manage your keys</p>
+              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">{t('dashboard.apiKeys')}</p>
+              <p className="text-xs text-neutral-500">{t('dashboard.manageKeys')}</p>
             </Link>
             <Link to="/packages" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
-              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">Packages</p>
-              <p className="text-xs text-neutral-500">View plans</p>
+              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">{t('dashboard.packages')}</p>
+              <p className="text-xs text-neutral-500">{t('dashboard.viewPlans')}</p>
             </Link>
             <Link to="/pricing" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
-              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">Pricing</p>
-              <p className="text-xs text-neutral-500">Model prices</p>
+              <p className="text-sm font-medium text-white group-hover:text-brand-400 transition-colors">{t('dashboard.pricing')}</p>
+              <p className="text-xs text-neutral-500">{t('dashboard.modelPrices')}</p>
             </Link>
             <div className="glass-sm !rounded-xl px-4 py-3 opacity-50">
-              <p className="text-sm font-medium text-white">API Docs</p>
-              <p className="text-xs text-neutral-500">Coming soon</p>
+              <p className="text-sm font-medium text-white">{t('dashboard.apiDocs')}</p>
+              <p className="text-xs text-neutral-500">{t('dashboard.comingSoon')}</p>
             </div>
           </div>
         </div>

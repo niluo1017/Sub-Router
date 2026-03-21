@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useSite } from '../context/SiteContext';
 import toast from 'react-hot-toast';
 
 export default function Register() {
+  const { t } = useTranslation();
   const { register, user } = useAuth();
   const { site } = useSite();
   const navigate = useNavigate();
@@ -19,19 +21,19 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.username || !form.password) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('register.fillRequired'));
       return;
     }
     if (form.password !== form.password2) {
-      toast.error('Passwords do not match');
+      toast.error(t('register.passwordMismatch'));
       return;
     }
     if (form.password.length < 8) {
-      toast.error('Password must be 8-20 characters');
+      toast.error(t('register.passwordLength'));
       return;
     }
     if (form.password.length > 20) {
-      toast.error('Password must be 8-20 characters');
+      toast.error(t('register.passwordLength'));
       return;
     }
     setLoading(true);
@@ -42,7 +44,7 @@ export default function Register() {
         email: form.email || undefined,
       });
       if (result.success) {
-        toast.success('Account created! Please sign in.');
+        toast.success(t('register.accountCreated'));
         navigate('/login', { replace: true });
         return; // component may unmount — skip setLoading
       }
@@ -58,59 +60,59 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="glass rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-heading font-bold text-white mb-2">Create Account</h1>
+            <h1 className="text-2xl font-heading font-bold text-white mb-2">{t('register.createAccount')}</h1>
             <p className="text-sm text-neutral-400">
-              Get started with {site?.name || 'our platform'}
+              {site?.name ? t('register.getStartedWith', { name: site.name }) : t('register.getStartedDefault')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Username *</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.username')} *</label>
               <input
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 className="input"
-                placeholder="Choose a username"
+                placeholder={t('register.chooseUsername')}
                 autoComplete="username"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.email')}</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="input"
-                placeholder="your@email.com (optional)"
+                placeholder={t('register.emailPlaceholder')}
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Password *</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.password')} *</label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="input"
-                placeholder="8-20 characters"
+                placeholder={t('register.passwordPlaceholder')}
                 autoComplete="new-password"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Confirm Password *</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.confirmPassword')} *</label>
               <input
                 type="password"
                 value={form.password2}
                 onChange={(e) => setForm({ ...form, password2: e.target.value })}
                 className="input"
-                placeholder="Repeat your password"
+                placeholder={t('register.repeatPassword')}
                 autoComplete="new-password"
                 required
               />
@@ -124,15 +126,15 @@ export default function Register() {
               {loading && (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               )}
-              {loading ? 'Creating...' : 'Create Account'}
+              {loading ? t('register.creating') : t('register.createAccountBtn')}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-neutral-400">
-              Already have an account?{' '}
+              {t('register.hasAccount')}{' '}
               <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors font-medium">
-                Sign in
+                {t('register.signIn')}
               </Link>
             </p>
           </div>

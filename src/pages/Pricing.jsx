@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSiteModels } from '../api';
 
 export default function Pricing() {
+  const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // /api/dist/site/pricing returns same data as /api/dist/site/models — only need one call
     getSiteModels()
       .then((r) => {
         if (r.data.success) setModels(r.data.data || []);
@@ -34,9 +35,9 @@ export default function Pricing() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-heading font-bold text-white mb-3">Model Pricing</h1>
+        <h1 className="text-3xl font-heading font-bold text-white mb-3">{t('pricing.title')}</h1>
         <p className="text-neutral-400 max-w-xl mx-auto">
-          Transparent, pay-as-you-go pricing for all available models. Prices shown per 1M tokens.
+          {t('pricing.subtitle')}
         </p>
       </div>
 
@@ -51,24 +52,24 @@ export default function Pricing() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input !pl-10"
-            placeholder="Search models..."
+            placeholder={t('pricing.searchPlaceholder')}
           />
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-neutral-400">
-          {search ? 'No models match your search' : 'No models available'}
+          {search ? t('pricing.noMatch') : t('pricing.noModels')}
         </div>
       ) : (
         <div className="glass-sm rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-5 py-3.5 font-medium text-neutral-400">Model</th>
-                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Input / 1M tokens</th>
-                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">Output / 1M tokens</th>
-                <th className="text-center px-5 py-3.5 font-medium text-neutral-400">Status</th>
+                <th className="text-left px-5 py-3.5 font-medium text-neutral-400">{t('pricing.model')}</th>
+                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">{t('pricing.inputPrice')}</th>
+                <th className="text-right px-5 py-3.5 font-medium text-neutral-400">{t('pricing.outputPrice')}</th>
+                <th className="text-center px-5 py-3.5 font-medium text-neutral-400">{t('pricing.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -90,7 +91,7 @@ export default function Pricing() {
                         : 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${m.status === 'healthy' ? 'bg-green-500' : 'bg-neutral-500'}`} />
-                      {m.status === 'healthy' ? 'Online' : 'Unknown'}
+                      {m.status === 'healthy' ? t('pricing.online') : t('pricing.unknown')}
                     </span>
                   </td>
                 </tr>

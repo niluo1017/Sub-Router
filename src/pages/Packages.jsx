@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getSitePackages, subscribePackage, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import toast from 'react-hot-toast';
 
 export default function Packages() {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [packages, setPackages] = useState([]);
@@ -36,7 +38,7 @@ export default function Packages() {
     try {
       const res = await subscribePackage(pkgId);
       if (res.data.success) {
-        toast.success('Subscribed successfully!');
+        toast.success(t('packages.subscribedSuccess'));
         setConfirmPkg(null);
         // Refresh user data to update balance
         await refreshUser();
@@ -65,17 +67,17 @@ export default function Packages() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-heading font-bold text-white mb-3">Packages & Plans</h1>
+        <h1 className="text-3xl font-heading font-bold text-white mb-3">{t('packages.title')}</h1>
         <p className="text-neutral-400 max-w-xl mx-auto">
-          Choose a package that fits your usage. All plans include access to all available models.
+          {t('packages.subtitle')}
         </p>
       </div>
 
       {enabled.length === 0 ? (
         <div className="text-center py-12 text-neutral-400">
-          <p>No packages available at the moment.</p>
+          <p>{t('packages.noPackages')}</p>
           <Link to="/pricing" className="text-brand-400 hover:text-brand-300 transition-colors mt-2 inline-block">
-            Check model pricing &rarr;
+            {t('packages.checkPricing')} &rarr;
           </Link>
         </div>
       ) : (
@@ -104,7 +106,7 @@ export default function Packages() {
                     )}
                   </div>
                   {pkg.duration > 0 && (
-                    <p className="text-sm text-neutral-500 mt-1">{pkg.duration} days access</p>
+                    <p className="text-sm text-neutral-500 mt-1">{t('packages.daysAccess', { count: pkg.duration })}</p>
                   )}
                 </div>
 
@@ -115,7 +117,7 @@ export default function Packages() {
                       <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      ${(pkg.quota_amount / Q).toFixed(2)} credit included
+                      {t('packages.creditIncluded', { amount: (pkg.quota_amount / Q).toFixed(2) })}
                     </li>
                   )}
                   {pkg.rate_limit > 0 && (
@@ -123,20 +125,20 @@ export default function Packages() {
                       <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {pkg.rate_limit} requests/min
+                      {t('packages.requestsMin', { count: pkg.rate_limit })}
                     </li>
                   )}
                   <li className="flex items-center gap-2 text-sm text-neutral-300">
                     <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    All models access
+                    {t('packages.allModels')}
                   </li>
                   <li className="flex items-center gap-2 text-sm text-neutral-300">
                     <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    OpenAI-compatible API
+                    {t('packages.openaiApi')}
                   </li>
                 </ul>
 
@@ -146,7 +148,7 @@ export default function Packages() {
                   disabled={subscribing === pkg.id}
                   className="btn-primary w-full text-center"
                 >
-                  {subscribing === pkg.id ? 'Processing...' : user ? 'Subscribe Now' : 'Sign Up to Subscribe'}
+                  {subscribing === pkg.id ? t('packages.processing') : user ? t('packages.subscribeNow') : t('packages.signUpToSubscribe')}
                 </button>
               </div>
             </SpotlightCard>
@@ -162,23 +164,22 @@ export default function Packages() {
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => !subscribing && setConfirmPkg(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-3">Confirm Subscription</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">{t('packages.confirmTitle')}</h2>
             <p className="text-sm text-neutral-400 mb-2">
-              Subscribe to <span className="text-white font-medium">{confirmPkg.name}</span> for{' '}
-              <span className="text-white font-medium">${pkgPrice.toFixed(2)}</span>?
+              {t('packages.confirmDesc', { name: confirmPkg.name, price: pkgPrice.toFixed(2) })}
             </p>
             <p className="text-sm text-neutral-400 mb-4">
-              Your balance: <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
+              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
             </p>
             {insufficient && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
-                <p className="text-sm text-red-300">Insufficient balance. Please top up before subscribing.</p>
+                <p className="text-sm text-red-300">{t('packages.insufficientBalance')}</p>
               </div>
             )}
             <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmPkg(null)} disabled={subscribing} className="btn-secondary">Cancel</button>
+              <button onClick={() => setConfirmPkg(null)} disabled={subscribing} className="btn-secondary">{t('tokens.cancel')}</button>
               <button onClick={confirmSubscribe} disabled={insufficient || subscribing} className="btn-primary">
-                {subscribing ? 'Processing...' : 'Confirm'}
+                {subscribing ? t('packages.processing') : t('packages.confirm')}
               </button>
             </div>
           </div>

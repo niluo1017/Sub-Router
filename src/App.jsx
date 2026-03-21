@@ -1,9 +1,8 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
-const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -17,11 +16,13 @@ const Loading = () => (
   </div>
 );
 
-export default function App() {
+function ThemedRoutes() {
+  const { Home, Layout } = useTheme();
+
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
-        {/* Public pages with layout */}
+        {/* Public pages with themed layout */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<Pricing />} />
@@ -39,5 +40,13 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ThemedRoutes />
+    </ThemeProvider>
   );
 }

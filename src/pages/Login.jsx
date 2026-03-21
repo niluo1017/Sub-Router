@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useSite } from '../context/SiteContext';
 import toast from 'react-hot-toast';
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login, user } = useAuth();
   const { site } = useSite();
   const navigate = useNavigate();
@@ -21,14 +23,14 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.username || !form.password) {
-      toast.error('Please fill in all fields');
+      toast.error(t('login.fillAllFields'));
       return;
     }
     setLoading(true);
     try {
       const result = await login(form.username, form.password);
       if (result.success) {
-        toast.success('Welcome back!');
+        toast.success(t('login.welcomeBackToast'));
         const from = location.state?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
         return; // component may unmount — skip setLoading
@@ -45,34 +47,34 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="glass rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-heading font-bold text-white mb-2">Welcome Back</h1>
+            <h1 className="text-2xl font-heading font-bold text-white mb-2">{t('login.welcomeBack')}</h1>
             <p className="text-sm text-neutral-400">
-              Sign in to {site?.name || 'your account'}
+              {site?.name ? t('login.signInTo', { name: site.name }) : t('login.signInToDefault')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Username</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('login.username')}</label>
               <input
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 className="input"
-                placeholder="Enter your username"
+                placeholder={t('login.enterUsername')}
                 autoComplete="username"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('login.password')}</label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="input"
-                placeholder="Enter your password"
+                placeholder={t('login.enterPassword')}
                 autoComplete="current-password"
                 required
               />
@@ -86,15 +88,15 @@ export default function Login() {
               {loading && (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               )}
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('login.signingIn') : t('login.signInBtn')}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-neutral-400">
-              Don't have an account?{' '}
+              {t('login.noAccount')}{' '}
               <Link to="/register" className="text-brand-400 hover:text-brand-300 transition-colors font-medium">
-                Create one
+                {t('login.createOne')}
               </Link>
             </p>
           </div>

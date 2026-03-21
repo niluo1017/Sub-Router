@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getTokens, createToken, updateToken, deleteToken } from '../api';
 import toast from 'react-hot-toast';
 
 export default function Tokens() {
+  const { t } = useTranslation();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -27,7 +29,7 @@ export default function Tokens() {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!createName.trim()) {
-      toast.error('Please enter a name');
+      toast.error(t('tokens.enterName'));
       return;
     }
     setCreating(true);
@@ -53,7 +55,7 @@ export default function Tokens() {
         status: token.status === 1 ? 2 : 1,
       });
       if (res.data.success) {
-        toast.success(token.status === 1 ? 'Token disabled' : 'Token enabled');
+        toast.success(token.status === 1 ? t('tokens.tokenDisabled') : t('tokens.tokenEnabled'));
         await load();
       }
     } catch (e) { /* interceptor */ }
@@ -64,7 +66,7 @@ export default function Tokens() {
     try {
       const res = await deleteToken(deleteConfirm.id);
       if (res.data.success) {
-        toast.success('Token deleted');
+        toast.success(t('tokens.tokenDeleted'));
         setDeleteConfirm(null);
         await load();
       }
@@ -85,7 +87,7 @@ export default function Tokens() {
       document.body.removeChild(ta);
     }
     setCopiedId(text);
-    toast.success('Copied to clipboard!');
+    toast.success(t('tokens.copiedToClipboard'));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -101,11 +103,11 @@ export default function Tokens() {
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-white">API Keys</h1>
-          <p className="text-sm text-neutral-400 mt-1">Manage your API access tokens</p>
+          <h1 className="text-2xl font-heading font-bold text-white">{t('tokens.title')}</h1>
+          <p className="text-sm text-neutral-400 mt-1">{t('tokens.subtitle')}</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary">
-          + New Key
+          {t('tokens.newKey')}
         </button>
       </div>
 
@@ -113,26 +115,26 @@ export default function Tokens() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-4">Create API Key</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">{t('tokens.createApiKey')}</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-1.5">Name</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('tokens.name')}</label>
                 <input
                   type="text"
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
                   className="input"
-                  placeholder="e.g. my-app-key"
+                  placeholder={t('tokens.namePlaceholder')}
                   autoFocus
                   required
                 />
               </div>
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
-                  Cancel
+                  {t('tokens.cancel')}
                 </button>
                 <button type="submit" disabled={creating} className="btn-primary">
-                  {creating ? 'Creating...' : 'Create'}
+                  {creating ? t('tokens.creating') : t('tokens.create')}
                 </button>
               </div>
             </form>
@@ -144,10 +146,10 @@ export default function Tokens() {
       {newKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass rounded-2xl p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-white mb-2">Your New API Key</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">{t('tokens.newApiKey')}</h2>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 mb-4">
               <p className="text-sm text-yellow-300">
-                This is the only time you'll see this key. Copy it now and store it securely.
+                {t('tokens.keyWarning')}
               </p>
             </div>
             <div className="bg-black/40 rounded-xl p-4 flex items-center gap-3">
@@ -158,12 +160,12 @@ export default function Tokens() {
                 onClick={() => handleCopy(newKey)}
                 className="btn-primary !px-4 !py-1.5 flex-shrink-0"
               >
-                {copiedId === newKey ? 'Copied!' : 'Copy'}
+                {copiedId === newKey ? t('tokens.copied') : t('tokens.copy')}
               </button>
             </div>
             <div className="flex justify-end mt-4">
               <button onClick={() => setNewKey(null)} className="btn-secondary">
-                I've saved my key
+                {t('tokens.savedKey')}
               </button>
             </div>
           </div>
@@ -174,14 +176,14 @@ export default function Tokens() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-3">Delete Token</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">{t('tokens.deleteToken')}</h2>
             <p className="text-sm text-neutral-400 mb-4">
-              Delete <span className="text-white font-medium">"{deleteConfirm.name}"</span>? This cannot be undone.
+              {t('tokens.deleteConfirm', { name: deleteConfirm.name })}
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="btn-secondary">Cancel</button>
+              <button onClick={() => setDeleteConfirm(null)} className="btn-secondary">{t('tokens.cancel')}</button>
               <button onClick={handleDelete} className="px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-500 transition-colors">
-                Delete
+                {t('tokens.delete')}
               </button>
             </div>
           </div>
@@ -196,9 +198,9 @@ export default function Tokens() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <p className="text-neutral-400 mb-4">No API keys yet</p>
+          <p className="text-neutral-400 mb-4">{t('tokens.noKeys')}</p>
           <button onClick={() => setShowCreate(true)} className="btn-primary">
-            Create Your First Key
+            {t('tokens.createFirst')}
           </button>
         </div>
       ) : (
@@ -231,13 +233,13 @@ export default function Tokens() {
                       : 'border-neutral-600 text-neutral-400 hover:bg-neutral-800'
                   }`}
                 >
-                  {token.status === 1 ? 'Enabled' : 'Disabled'}
+                  {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(token)}
                   className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
                 >
-                  Delete
+                  {t('tokens.delete')}
                 </button>
               </div>
             </div>
@@ -247,9 +249,9 @@ export default function Tokens() {
 
       {/* API Usage Note */}
       <div className="glass rounded-2xl p-6 mt-8">
-        <h3 className="text-sm font-semibold text-white mb-3">Quick Start</h3>
+        <h3 className="text-sm font-semibold text-white mb-3">{t('tokens.quickStart')}</h3>
         <div className="bg-black/40 rounded-xl p-4 font-mono text-sm">
-          <p className="text-neutral-500"># Use your API key with OpenAI-compatible endpoint</p>
+          <p className="text-neutral-500">{t('tokens.quickStartComment')}</p>
           <p className="text-green-400 mt-2">
             curl {window.location.origin}/v1/chat/completions \
           </p>

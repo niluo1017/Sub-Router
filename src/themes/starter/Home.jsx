@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useSite } from '../context/SiteContext';
-import { getSiteModels, getSitePackages } from '../api';
-import GradientText from '../components/bits/GradientText';
-import BlurText from '../components/bits/BlurText';
-import SpotlightCard from '../components/bits/SpotlightCard';
-import CountUp from '../components/bits/CountUp';
-import StarBorder from '../components/bits/StarBorder';
-import ShinyText from '../components/bits/ShinyText';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
+import { useSite } from '../../context/SiteContext';
+import { getSiteModels, getSitePackages } from '../../api';
+import GradientText from '../../components/bits/GradientText';
+import BlurText from '../../components/bits/BlurText';
+import SpotlightCard from '../../components/bits/SpotlightCard';
+import CountUp from '../../components/bits/CountUp';
+import StarBorder from '../../components/bits/StarBorder';
+import ShinyText from '../../components/bits/ShinyText';
 
-export default function Home() {
+export default function StarterHome() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
   const [models, setModels] = useState([]);
@@ -40,12 +42,12 @@ export default function Home() {
               animationSpeed={6}
               className="text-5xl md:text-7xl font-heading font-extrabold leading-tight"
             >
-              {site?.name || 'AI API Platform'}
+              {site?.name || t('home.defaultHeroTitle')}
             </GradientText>
           </div>
 
           <BlurText
-            text="Access the world's most powerful AI models through a single API endpoint. Simple, affordable, reliable."
+            text={t('home.heroSubtitle')}
             className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-10"
             delay={50}
             animateBy="words"
@@ -55,16 +57,16 @@ export default function Home() {
             {user ? (
               <Link to="/dashboard">
                 <StarBorder as="div" color="#818cf8" speed="5s">
-                  Go to Dashboard
+                  {t('home.goToDashboard')}
                 </StarBorder>
               </Link>
             ) : (
               <>
                 <Link to="/register" className="btn-primary text-base !px-8 !py-3">
-                  Get Started Free
+                  {t('home.getStarted')}
                 </Link>
                 <Link to="/pricing" className="btn-secondary text-base !px-8 !py-3">
-                  View Pricing
+                  {t('home.viewPricing')}
                 </Link>
               </>
             )}
@@ -77,19 +79,19 @@ export default function Home() {
             <div className="text-3xl font-bold text-white">
               <CountUp from={0} to={enabledModels.length || 50} duration={2} separator="" />+
             </div>
-            <p className="text-sm text-neutral-500 mt-1">AI Models</p>
+            <p className="text-sm text-neutral-500 mt-1">{t('home.aiModels')}</p>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-white">
               <CountUp from={0} to={99.9} duration={2.5} />%
             </div>
-            <p className="text-sm text-neutral-500 mt-1">Uptime</p>
+            <p className="text-sm text-neutral-500 mt-1">{t('home.uptime')}</p>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-white">
               &lt;<CountUp from={200} to={50} duration={2} direction="down" />ms
             </div>
-            <p className="text-sm text-neutral-500 mt-1">Latency</p>
+            <p className="text-sm text-neutral-500 mt-1">{t('home.latency')}</p>
           </div>
         </div>
       </section>
@@ -97,8 +99,8 @@ export default function Home() {
       {/* Features Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-heading font-bold text-white mb-3">Why Choose Us</h2>
-          <p className="text-neutral-400">Everything you need to build AI-powered applications</p>
+          <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.whyChooseUs')}</h2>
+          <p className="text-neutral-400">{t('home.whyChooseUsDesc')}</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -108,10 +110,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Lightning Fast</h3>
-            <p className="text-sm text-neutral-400 leading-relaxed">
-              Optimized routing and caching deliver responses with minimal latency. Load-balanced across multiple providers for maximum reliability.
-            </p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('home.lightningFast')}</h3>
+            <p className="text-sm text-neutral-400 leading-relaxed">{t('home.lightningFastDesc')}</p>
           </SpotlightCard>
 
           <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60" spotlightColor="rgba(192,132,252,0.15)">
@@ -120,10 +120,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Secure & Private</h3>
-            <p className="text-sm text-neutral-400 leading-relaxed">
-              Enterprise-grade security with encrypted API keys. No request logging by default. Your data stays your data.
-            </p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('home.securePrivate')}</h3>
+            <p className="text-sm text-neutral-400 leading-relaxed">{t('home.securePrivateDesc')}</p>
           </SpotlightCard>
 
           <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60" spotlightColor="rgba(244,114,182,0.15)">
@@ -132,10 +130,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Pay As You Go</h3>
-            <p className="text-sm text-neutral-400 leading-relaxed">
-              Transparent pricing with no hidden fees. Only pay for what you use. Multiple top-up options and subscription packages available.
-            </p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('home.payAsYouGo')}</h3>
+            <p className="text-sm text-neutral-400 leading-relaxed">{t('home.payAsYouGoDesc')}</p>
           </SpotlightCard>
         </div>
       </section>
@@ -144,9 +140,9 @@ export default function Home() {
       {enabledModels.length > 0 && (
         <section className="relative max-w-7xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-heading font-bold text-white mb-3">Available Models</h2>
+            <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.availableModels')}</h2>
             <p className="text-neutral-400">
-              Access <span className="text-brand-400 font-medium">{enabledModels.length}</span> AI models through a unified API
+              {t('home.availableModelsDesc', { count: enabledModels.length })}
             </p>
           </div>
 
@@ -167,7 +163,7 @@ export default function Home() {
           {enabledModels.length > 12 && (
             <div className="text-center mt-6">
               <Link to="/pricing" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
-                View all {enabledModels.length} models &rarr;
+                {t('home.viewAllModels', { count: enabledModels.length })} &rarr;
               </Link>
             </div>
           )}
@@ -178,8 +174,8 @@ export default function Home() {
       {packages.length > 0 && (
         <section className="relative max-w-7xl mx-auto px-6 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-heading font-bold text-white mb-3">Plans & Packages</h2>
-            <p className="text-neutral-400">Choose a plan that fits your needs</p>
+            <h2 className="text-3xl font-heading font-bold text-white mb-3">{t('home.plansPackages')}</h2>
+            <p className="text-neutral-400">{t('home.choosePlan')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -197,14 +193,14 @@ export default function Home() {
                     )}
                   </div>
                   {pkg.duration > 0 && (
-                    <p className="text-xs text-neutral-500 mt-1">{pkg.duration} days</p>
+                    <p className="text-xs text-neutral-500 mt-1">{t('home.days', { count: pkg.duration })}</p>
                   )}
                 </div>
                 <Link
                   to={user ? '/packages' : '/register'}
                   className="btn-primary text-center mt-4 !py-2"
                 >
-                  {user ? 'Subscribe' : 'Get Started'}
+                  {user ? t('home.subscribe') : t('home.getStarted')}
                 </Link>
               </div>
             ))}
@@ -218,23 +214,23 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-brand-600/10 via-transparent to-purple-600/10" />
           <div className="relative z-10">
             <h2 className="text-3xl font-heading font-bold text-white mb-4">
-              Ready to Get Started?
+              {t('home.readyToStart')}
             </h2>
             <p className="text-neutral-400 mb-8 max-w-md mx-auto">
-              Create your account and start building with AI in minutes. No credit card required.
+              {t('home.readyToStartDesc')}
             </p>
             <div className="flex items-center justify-center gap-4">
               {user ? (
                 <Link to="/dashboard" className="btn-primary text-base !px-8 !py-3">
-                  Go to Dashboard
+                  {t('home.goToDashboard')}
                 </Link>
               ) : (
                 <>
                   <Link to="/register" className="btn-primary text-base !px-8 !py-3">
-                    Create Free Account
+                    {t('home.createFreeAccount')}
                   </Link>
                   <Link to="/login" className="btn-secondary text-base !px-8 !py-3">
-                    Sign In
+                    {t('home.signIn')}
                   </Link>
                 </>
               )}
