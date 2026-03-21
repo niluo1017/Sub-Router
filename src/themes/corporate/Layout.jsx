@@ -27,7 +27,7 @@ export default function CorporateLayout() {
   const visibleNavItems = navItems.filter((n) => !n.auth || user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
+    <div className="theme-light min-h-screen flex flex-col bg-white text-gray-900">
       {/* Announcement */}
       {site?.announcement && (
         <div className="bg-slate-900 text-center py-2.5 px-4">

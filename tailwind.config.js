@@ -30,6 +30,14 @@ export default {
           800: '#3730a3',
           900: '#312e81',
         },
+        /* Theme-aware page colors via CSS variables */
+        page: {
+          DEFAULT: 'rgb(var(--page-text) / <alpha-value>)',
+          secondary: 'rgb(var(--page-text-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--page-text-muted) / <alpha-value>)',
+          label: 'rgb(var(--page-label) / <alpha-value>)',
+          link: 'rgb(var(--page-link) / <alpha-value>)',
+        },
       },
       animation: {
         'star-movement-bottom': 'star-movement-bottom linear infinite alternate',

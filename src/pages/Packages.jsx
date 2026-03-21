@@ -98,8 +98,8 @@ export default function Packages() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-heading font-bold text-white mb-3">{t('packages.title')}</h1>
-        <p className="text-neutral-400 max-w-xl mx-auto">
+        <h1 className="text-3xl font-heading font-bold text-page mb-3">{t('packages.title')}</h1>
+        <p className="text-page-secondary max-w-xl mx-auto">
           {t('packages.subtitle')}
         </p>
       </div>
@@ -107,7 +107,7 @@ export default function Packages() {
       {/* Active Subscriptions */}
       {activeSubs.length > 0 && (
         <div className="max-w-3xl mx-auto mb-10">
-          <h2 className="text-lg font-semibold text-white mb-4">
+          <h2 className="text-lg font-semibold text-page mb-4">
             {t('packages.mySubscriptions')}
           </h2>
           <div className="space-y-3">
@@ -119,14 +119,14 @@ export default function Packages() {
               return (
                 <div key={sub.id} className="glass rounded-xl p-4 border border-neutral-800/50">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-page">
                       {t('packages.subscriptionId', { id: sub.id })}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
                       {t('packages.active')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-neutral-400 mb-3">
+                  <div className="flex items-center gap-4 text-xs text-page-secondary mb-3">
                     <span>{t('packages.expires')}: {formatDate(sub.end_time)}</span>
                     {sub.next_reset_time > 0 && (
                       <span>{t('packages.nextReset')}: {formatDate(sub.next_reset_time)}</span>
@@ -137,7 +137,7 @@ export default function Packages() {
                       <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
                         style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-xs text-neutral-400 whitespace-nowrap">
+                    <span className="text-xs text-page-secondary whitespace-nowrap">
                       ${(remain / Q).toFixed(2)} / ${(total / Q).toFixed(2)}
                     </span>
                   </div>
@@ -149,9 +149,9 @@ export default function Packages() {
       )}
 
       {enabled.length === 0 ? (
-        <div className="text-center py-12 text-neutral-400">
+        <div className="text-center py-12 text-page-secondary">
           <p>{t('packages.noPackages')}</p>
-          <Link to="/pricing" className="text-brand-400 hover:text-brand-300 transition-colors mt-2 inline-block">
+          <Link to="/pricing" className="text-page-link hover:text-page-link transition-colors mt-2 inline-block">
             {t('packages.checkPricing')} &rarr;
           </Link>
         </div>
@@ -170,7 +170,7 @@ export default function Packages() {
                 {/* Header */}
                 <div className="mb-4">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-semibold text-white">{pkg.name}</h3>
+                    <h3 className="text-xl font-semibold text-page">{pkg.name}</h3>
                     {isSubscription && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
                         {getResetLabel(resetPeriod)}
@@ -178,27 +178,27 @@ export default function Packages() {
                     )}
                   </div>
                   {pkg.description && (
-                    <p className="text-sm text-neutral-400 mt-1">{pkg.description}</p>
+                    <p className="text-sm text-page-secondary mt-1">{pkg.description}</p>
                   )}
                 </div>
 
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-white">${Number(pkg.price).toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-page">${Number(pkg.price).toFixed(2)}</span>
                     {pkg.original_price > 0 && pkg.original_price > pkg.price && (
-                      <span className="text-lg text-neutral-500 line-through">${Number(pkg.original_price).toFixed(2)}</span>
+                      <span className="text-lg text-page-muted line-through">${Number(pkg.original_price).toFixed(2)}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && (
-                    <p className="text-sm text-neutral-500 mt-1">{t('packages.daysAccess', { count: pkg.duration })}</p>
+                    <p className="text-sm text-page-muted mt-1">{t('packages.daysAccess', { count: pkg.duration })}</p>
                   )}
                 </div>
 
                 {/* Features */}
                 <ul className="space-y-2 mb-6 flex-1">
                   {pkg.quota_amount > 0 && (
-                    <li className="flex items-center gap-2 text-sm text-neutral-300">
+                    <li className="flex items-center gap-2 text-sm text-page-label">
                       <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
@@ -209,20 +209,20 @@ export default function Packages() {
                     </li>
                   )}
                   {isSubscription && (
-                    <li className="flex items-center gap-2 text-sm text-neutral-300">
+                    <li className="flex items-center gap-2 text-sm text-page-label">
                       <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       {t('packages.unusedQuotaExpires')}
                     </li>
                   )}
-                  <li className="flex items-center gap-2 text-sm text-neutral-300">
+                  <li className="flex items-center gap-2 text-sm text-page-label">
                     <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {t('packages.allModels')}
                   </li>
-                  <li className="flex items-center gap-2 text-sm text-neutral-300">
+                  <li className="flex items-center gap-2 text-sm text-page-label">
                     <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -254,8 +254,8 @@ export default function Packages() {
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => !subscribing && setConfirmPkg(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-3">{t('packages.confirmTitle')}</h2>
-            <p className="text-sm text-neutral-400 mb-2">
+            <h2 className="text-lg font-semibold text-page mb-3">{t('packages.confirmTitle')}</h2>
+            <p className="text-sm text-page-secondary mb-2">
               {t('packages.confirmDesc', { name: confirmPkg.name, price: pkgPrice.toFixed(2) })}
             </p>
             {isSubscription && (
@@ -269,7 +269,7 @@ export default function Packages() {
                 </p>
               </div>
             )}
-            <p className="text-sm text-neutral-400 mb-4">
+            <p className="text-sm text-page-secondary mb-4">
               {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
             </p>
             {insufficient && (

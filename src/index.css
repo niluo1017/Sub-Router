@@ -5,6 +5,16 @@
 @layer base {
   :root {
     --brand: 99 102 241;
+    /* Light theme text colors (overridden by .theme-light) */
+    --page-text: 255 255 255;
+    --page-text-secondary: 163 163 163;
+    --page-text-muted: 115 115 115;
+    --page-label: 212 212 212;
+    --page-card-bg: rgba(255,255,255,0.03);
+    --page-card-border: rgba(255,255,255,0.06);
+    --page-input-bg: rgba(255,255,255,0.04);
+    --page-input-border: rgba(255,255,255,0.1);
+    --page-link: 129 140 248;
   }
 
   body {
@@ -16,7 +26,6 @@
     @apply bg-brand-500/30;
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar {
     @apply w-1.5;
   }
@@ -26,37 +35,74 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-neutral-700 rounded-full;
   }
+
+  .theme-light ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300;
+  }
+
+  /* Light theme variable overrides */
+  .theme-light {
+    --page-text: 17 24 39;
+    --page-text-secondary: 107 114 128;
+    --page-text-muted: 156 163 175;
+    --page-label: 55 65 81;
+    --page-card-bg: rgba(255,255,255,0.85);
+    --page-card-border: rgb(229,231,235);
+    --page-input-bg: #fff;
+    --page-input-border: rgb(209,213,219);
+    --page-link: 79 70 229;
+  }
+
+  .theme-claude {
+    --page-link: 217 119 87;
+  }
 }
 
 @layer components {
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+    background: var(--page-card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--page-card-border);
+    @apply rounded-2xl;
   }
 
   .glass-sm {
-    @apply bg-white/[0.04] backdrop-blur-md border border-white/[0.08] rounded-xl;
+    background: var(--page-card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--page-card-border);
+    @apply rounded-xl;
   }
 
   .btn-primary {
-    @apply px-6 py-2.5 rounded-xl bg-brand-600 text-white font-medium text-sm
+    @apply px-6 py-2.5 rounded-xl bg-brand-600 font-medium text-sm
            hover:bg-brand-500 active:bg-brand-700
            transition-all duration-200 ease-out
            shadow-lg shadow-brand-600/20
            disabled:opacity-50 disabled:cursor-not-allowed;
+    color: #fff;
   }
 
   .btn-secondary {
-    @apply px-6 py-2.5 rounded-xl border border-white/10 text-white font-medium text-sm
-           hover:bg-white/5 active:bg-white/10
+    @apply px-6 py-2.5 rounded-xl font-medium text-sm
            transition-all duration-200 ease-out
            disabled:opacity-50 disabled:cursor-not-allowed;
+    border: 1px solid var(--page-input-border);
+    color: rgb(var(--page-label));
+  }
+  .btn-secondary:hover {
+    background: rgba(var(--page-text), 0.05);
   }
 
   .input {
-    @apply w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/[0.04]
-           text-white placeholder-neutral-500 text-sm
+    @apply w-full px-4 py-2.5 rounded-xl text-sm
            focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/60
            transition-all duration-200;
+    background: var(--page-input-bg);
+    border: 1px solid var(--page-input-border);
+    color: rgb(var(--page-text));
+  }
+  .input::placeholder {
+    color: rgb(var(--page-text-muted));
   }
 
   .card-glow {
@@ -71,4 +117,68 @@
   .card-glow:hover::before {
     @apply opacity-100;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Light theme shared-page color overrides
+   Outside @layer to win specificity over Tailwind utilities.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Map dark-theme text utilities to light-appropriate colors.
+   Uses a data attribute to avoid Tailwind circular-dependency issues. */
+.theme-light {
+  /* Override body defaults scoped to this container */
+  color: rgb(17 24 39);
+}
+
+/* Glass cards get subtle shadow in light mode */
+.theme-light .glass,
+.theme-light .glass-sm {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Light theme input focus */
+.theme-light .input:focus {
+  border-color: rgb(99 102 241);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+
+/* Card glow toned down */
+.theme-light .card-glow::before {
+  background: linear-gradient(to right, rgba(99,102,241,0.06), rgba(168,85,247,0.06), rgba(236,72,153,0.06));
+}
+
+/* ═══════════════════════════════════════════════
+   Claude theme accent overrides
+   ═══════════════════════════════════════════════ */
+.theme-claude .btn-primary {
+  background-color: #D97757;
+  box-shadow: 0 4px 14px rgba(217,119,87,0.15);
+}
+.theme-claude .btn-primary:hover {
+  background-color: #C4613F;
+}
+.theme-claude .btn-primary:active {
+  background-color: #A85232;
+}
+
+.theme-claude .glass,
+.theme-claude .glass-sm {
+  border-color: #E8DDD0;
+}
+
+.theme-claude .input {
+  border-color: #D9C5B2;
+}
+.theme-claude .input:focus {
+  border-color: #D97757;
+  box-shadow: 0 0 0 3px rgba(217,119,87,0.15);
+}
+
+.theme-claude .btn-secondary {
+  border-color: #D9C5B2;
+  color: #6B5D4F;
+}
+.theme-claude .btn-secondary:hover {
+  background-color: rgba(217,119,87,0.05);
 }

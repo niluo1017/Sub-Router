@@ -27,7 +27,7 @@ export default function ClaudeLayout() {
   const visibleNavItems = navItems.filter((n) => !n.auth || user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF6F1] text-[#3D3024]">
+    <div className="theme-light theme-claude min-h-screen flex flex-col bg-[#FAF6F1] text-[#3D3024]">
       {/* Announcement */}
       {site?.announcement && (
         <div className="bg-[#D97757] text-center py-2.5 px-4">

@@ -47,15 +47,15 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="glass rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-heading font-bold text-white mb-2">{t('login.welcomeBack')}</h1>
-            <p className="text-sm text-neutral-400">
+            <h1 className="text-2xl font-heading font-bold text-page mb-2">{t('login.welcomeBack')}</h1>
+            <p className="text-sm text-page-secondary">
               {site?.name ? t('login.signInTo', { name: site.name }) : t('login.signInToDefault')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('login.username')}</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('login.username')}</label>
               <input
                 type="text"
                 value={form.username}
@@ -68,7 +68,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('login.password')}</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('login.password')}</label>
               <input
                 type="password"
                 value={form.password}
@@ -93,9 +93,9 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-page-secondary">
               {t('login.noAccount')}{' '}
-              <Link to="/register" className="text-brand-400 hover:text-brand-300 transition-colors font-medium">
+              <Link to="/register" className="text-page-link hover:text-page-link transition-colors font-medium">
                 {t('login.createOne')}
               </Link>
             </p>

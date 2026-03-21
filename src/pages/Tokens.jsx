@@ -103,8 +103,8 @@ export default function Tokens() {
     <div className="max-w-5xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-white">{t('tokens.title')}</h1>
-          <p className="text-sm text-neutral-400 mt-1">{t('tokens.subtitle')}</p>
+          <h1 className="text-2xl font-heading font-bold text-page">{t('tokens.title')}</h1>
+          <p className="text-sm text-page-secondary mt-1">{t('tokens.subtitle')}</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary">
           {t('tokens.newKey')}
@@ -115,10 +115,10 @@ export default function Tokens() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-4">{t('tokens.createApiKey')}</h2>
+            <h2 className="text-lg font-semibold text-page mb-4">{t('tokens.createApiKey')}</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('tokens.name')}</label>
+                <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.name')}</label>
                 <input
                   type="text"
                   value={createName}
@@ -146,7 +146,7 @@ export default function Tokens() {
       {newKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass rounded-2xl p-6 w-full max-w-lg">
-            <h2 className="text-lg font-semibold text-white mb-2">{t('tokens.newApiKey')}</h2>
+            <h2 className="text-lg font-semibold text-page mb-2">{t('tokens.newApiKey')}</h2>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 mb-4">
               <p className="text-sm text-yellow-300">
                 {t('tokens.keyWarning')}
@@ -176,8 +176,8 @@ export default function Tokens() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-3">{t('tokens.deleteToken')}</h2>
-            <p className="text-sm text-neutral-400 mb-4">
+            <h2 className="text-lg font-semibold text-page mb-3">{t('tokens.deleteToken')}</h2>
+            <p className="text-sm text-page-secondary mb-4">
               {t('tokens.deleteConfirm', { name: deleteConfirm.name })}
             </p>
             <div className="flex justify-end gap-3">
@@ -198,7 +198,7 @@ export default function Tokens() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <p className="text-neutral-400 mb-4">{t('tokens.noKeys')}</p>
+          <p className="text-page-secondary mb-4">{t('tokens.noKeys')}</p>
           <button onClick={() => setShowCreate(true)} className="btn-primary">
             {t('tokens.createFirst')}
           </button>
@@ -212,14 +212,14 @@ export default function Tokens() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{token.name}</p>
-                <p className="text-xs font-mono text-neutral-500 mt-1">
+                <p className="text-sm font-medium text-page">{token.name}</p>
+                <p className="text-xs font-mono text-page-muted mt-1">
                   sk-***
                 </p>
               </div>
 
               {/* Created time */}
-              <span className="text-xs text-neutral-500 hidden md:block">
+              <span className="text-xs text-page-muted hidden md:block">
                 {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
               </span>
 
@@ -230,7 +230,7 @@ export default function Tokens() {
                   className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
                     token.status === 1
                       ? 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-                      : 'border-neutral-600 text-neutral-400 hover:bg-neutral-800'
+                      : 'border-neutral-600 text-page-secondary hover:bg-neutral-800'
                   }`}
                 >
                   {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
@@ -249,19 +249,19 @@ export default function Tokens() {
 
       {/* API Usage Note */}
       <div className="glass rounded-2xl p-6 mt-8">
-        <h3 className="text-sm font-semibold text-white mb-3">{t('tokens.quickStart')}</h3>
+        <h3 className="text-sm font-semibold text-page mb-3">{t('tokens.quickStart')}</h3>
         <div className="bg-black/40 rounded-xl p-4 font-mono text-sm">
-          <p className="text-neutral-500">{t('tokens.quickStartComment')}</p>
+          <p className="text-page-muted">{t('tokens.quickStartComment')}</p>
           <p className="text-green-400 mt-2">
             curl {window.location.origin}/v1/chat/completions \
           </p>
-          <p className="text-neutral-300 pl-4">
+          <p className="text-page-label pl-4">
             -H "Authorization: Bearer sk-your-key" \
           </p>
-          <p className="text-neutral-300 pl-4">
+          <p className="text-page-label pl-4">
             -H "Content-Type: application/json" \
           </p>
-          <p className="text-neutral-300 pl-4">
+          <p className="text-page-label pl-4">
             -d '{`{"model":"gpt-4o","messages":[{"role":"user","content":"Hello!"}]}`}'
           </p>
         </div>

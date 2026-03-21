@@ -60,15 +60,15 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="glass rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-heading font-bold text-white mb-2">{t('register.createAccount')}</h1>
-            <p className="text-sm text-neutral-400">
+            <h1 className="text-2xl font-heading font-bold text-page mb-2">{t('register.createAccount')}</h1>
+            <p className="text-sm text-page-secondary">
               {site?.name ? t('register.getStartedWith', { name: site.name }) : t('register.getStartedDefault')}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.username')} *</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('register.username')} *</label>
               <input
                 type="text"
                 value={form.username}
@@ -81,7 +81,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.email')}</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('register.email')}</label>
               <input
                 type="email"
                 value={form.email}
@@ -93,7 +93,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.password')} *</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('register.password')} *</label>
               <input
                 type="password"
                 value={form.password}
@@ -106,7 +106,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">{t('register.confirmPassword')} *</label>
+              <label className="block text-sm font-medium text-page-label mb-1.5">{t('register.confirmPassword')} *</label>
               <input
                 type="password"
                 value={form.password2}
@@ -131,9 +131,9 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-page-secondary">
               {t('register.hasAccount')}{' '}
-              <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors font-medium">
+              <Link to="/login" className="text-page-link hover:text-page-link transition-colors font-medium">
                 {t('register.signIn')}
               </Link>
             </p>

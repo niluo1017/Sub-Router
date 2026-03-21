@@ -27,7 +27,7 @@ export default function CleanLayout() {
   const visibleNavItems = navItems.filter((n) => !n.auth || user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
+    <div className="theme-light min-h-screen flex flex-col bg-white text-gray-900">
       {/* Announcement */}
       {site?.announcement && (
         <div className="bg-blue-50 border-b border-blue-100 text-center py-2.5 px-4">
