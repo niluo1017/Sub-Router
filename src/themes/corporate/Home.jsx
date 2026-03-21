@@ -14,6 +14,7 @@ export default function CorporateHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
+  const cs = site?.currency_symbol || '¥';
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -217,9 +218,9 @@ export default function CorporateHome() {
                         {pkg.description && <p className="text-sm text-slate-500 mb-6">{pkg.description}</p>}
                         <div className="mt-auto">
                           <div className="flex items-baseline gap-1.5">
-                            <span className="text-4xl font-bold text-slate-900">${pkg.price}</span>
+                            <span className="text-4xl font-bold text-slate-900">{cs}{pkg.price}</span>
                             {pkg.original_price > pkg.price && (
-                              <span className="text-sm text-slate-500 line-through">${pkg.original_price}</span>
+                              <span className="text-sm text-slate-500 line-through">{cs}{pkg.original_price}</span>
                             )}
                           </div>
                           {pkg.duration > 0 && <p className="text-sm text-slate-500 mt-1">{t('home.days', { count: pkg.duration })}</p>}
