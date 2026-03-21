@@ -154,6 +154,41 @@
     "packages.subscribedSuccess": "订阅成功！",
 
     "common.sessionExpired": "会话已过期，请重新登录",
-    "common.requestFailed": "请求失败"
+    "common.requestFailed": "请求失败",
+
+    "nav.topup": "充值",
+
+    "topup.title": "充值中心",
+    "topup.subtitle": "通过在线支付或兑换码为账户充值",
+    "topup.onlineTopup": "在线充值",
+    "topup.selectAmount": "选择金额",
+    "topup.customAmount": "自定义金额",
+    "topup.amountPlaceholder": "输入金额（最低 ${{min}}）",
+    "topup.paymentMethod": "支付方式",
+    "topup.processing": "处理中...",
+    "topup.calculating": "计算中...",
+    "topup.payAmountLabel": "实付金额",
+    "topup.enterAmount": "请输入充值金额",
+    "topup.paymentSuccess": "支付成功！余额已更新。",
+    "topup.orderExpired": "支付订单已过期",
+    "topup.viewHistory": "查看记录",
+    "topup.hideHistory": "隐藏记录",
+    "topup.history": "充值记录",
+    "topup.noHistory": "暂无充值记录",
+    "topup.statusSuccess": "成功",
+    "topup.statusPending": "待支付",
+    "topup.statusFailed": "失败",
+    "topup.redeemTitle": "兑换码充值",
+    "topup.enterRedeemCode": "请输入兑换码",
+    "topup.redeeming": "兑换中...",
+    "topup.redeem": "兑换",
+    "topup.redeemCode": "兑换码",
+    "topup.redeemSuccess": "兑换码兑换成功！",
+    "topup.cryptoPayment": "加密货币支付",
+    "topup.walletAddress": "钱包地址",
+    "topup.amount": "金额",
+    "topup.chain": "链",
+    "topup.waitingPayment": "等待支付中...",
+    "topup.close": "关闭"
   }
 }

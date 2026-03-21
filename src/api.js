@@ -67,6 +67,16 @@ export const deleteToken = (id) => api.delete(`/api/dist/token/${id}`);
 export const redeemCode = (key) => api.post('/api/dist/topup/redeem', { key }); // backend field is "key"
 export const subscribePackage = (packageId) => api.post('/api/dist/package/subscribe', { package_id: packageId });
 
+// ===== Online Topup =====
+export const getTopupInfo = () => api.get('/api/dist/topup/info');
+export const calculateAmount = (data) => api.post('/api/dist/topup/amount', data);
+export const createEpayOrder = (data) => api.post('/api/dist/topup/pay', data);
+export const createStripeOrder = (data) => api.post('/api/dist/topup/stripe/pay', data);
+export const createCreemOrder = (data) => api.post('/api/dist/topup/creem/pay', data);
+export const createCryptoOrder = (data) => api.post('/api/dist/topup/crypto/pay', data);
+export const getCryptoOrderStatus = (tradeNo) => api.get(`/api/dist/topup/crypto/status?trade_no=${tradeNo}`);
+export const getTopupHistory = (params) => api.get('/api/dist/topup/history', { params });
+
 // ===== Helpers =====
 export const quotaToDollar = (quota) => (quota / Q).toFixed(4);
 export const quotaToDollar6 = (quota) => (quota / Q).toFixed(6);

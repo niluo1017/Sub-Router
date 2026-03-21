@@ -154,6 +154,41 @@
     "packages.subscribedSuccess": "Subscribed successfully!",
 
     "common.sessionExpired": "Session expired, please log in again",
-    "common.requestFailed": "Request failed"
+    "common.requestFailed": "Request failed",
+
+    "nav.topup": "Top Up",
+
+    "topup.title": "Top Up",
+    "topup.subtitle": "Recharge your account balance via online payment or redemption code",
+    "topup.onlineTopup": "Online Top Up",
+    "topup.selectAmount": "Select Amount",
+    "topup.customAmount": "Custom Amount",
+    "topup.amountPlaceholder": "Enter amount (min ${{min}})",
+    "topup.paymentMethod": "Payment Method",
+    "topup.processing": "Processing...",
+    "topup.calculating": "Calculating...",
+    "topup.payAmountLabel": "Amount to pay",
+    "topup.enterAmount": "Please enter a top-up amount",
+    "topup.paymentSuccess": "Payment successful! Balance updated.",
+    "topup.orderExpired": "Payment order expired",
+    "topup.viewHistory": "View History",
+    "topup.hideHistory": "Hide History",
+    "topup.history": "Top-Up History",
+    "topup.noHistory": "No top-up records yet",
+    "topup.statusSuccess": "Success",
+    "topup.statusPending": "Pending",
+    "topup.statusFailed": "Failed",
+    "topup.redeemTitle": "Redeem Code",
+    "topup.enterRedeemCode": "Enter redemption code",
+    "topup.redeeming": "Redeeming...",
+    "topup.redeem": "Redeem",
+    "topup.redeemCode": "Redeem Code",
+    "topup.redeemSuccess": "Code redeemed successfully!",
+    "topup.cryptoPayment": "Crypto Payment",
+    "topup.walletAddress": "Wallet Address",
+    "topup.amount": "Amount",
+    "topup.chain": "Chain",
+    "topup.waitingPayment": "Waiting for payment...",
+    "topup.close": "Close"
   }
 }
