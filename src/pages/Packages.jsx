@@ -2,9 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { getSitePackages, subscribePackage, Q } from '../api';
+import { getSitePackages, subscribePackage, getActiveSubscriptions, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import toast from 'react-hot-toast';
+
+const resetLabelKeys = {
+  never: 'packages.resetNever',
+  daily: 'packages.resetDaily',
+  weekly: 'packages.resetWeekly',
+  monthly: 'packages.resetMonthly',
+};
+
+function formatDate(unix) {
+  if (!unix) return '';
+  return new Date(unix * 1000).toLocaleDateString();
+}
 
 export default function Packages() {
   const { t } = useTranslation();
@@ -13,8 +25,11 @@ export default function Packages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(null);
+  const [activeSubs, setActiveSubs] = useState([]);
 
   const [confirmPkg, setConfirmPkg] = useState(null);
+
+  const getResetLabel = (period) => t(resetLabelKeys[period] || resetLabelKeys.never);
 
   useEffect(() => {
     getSitePackages()
@@ -22,6 +37,15 @@ export default function Packages() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Load active subscriptions
+  useEffect(() => {
+    if (user) {
+      getActiveSubscriptions()
+        .then((r) => { if (r.data.success) setActiveSubs(r.data.data || []); })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const handleSubscribe = async (pkg) => {
     if (!user) {
@@ -40,10 +64,12 @@ export default function Packages() {
       if (res.data.success) {
         toast.success(t('packages.subscribedSuccess'));
         setConfirmPkg(null);
-        // Refresh user data to update balance
         await refreshUser();
+        // Reload subscriptions
+        getActiveSubscriptions()
+          .then((r) => { if (r.data.success) setActiveSubs(r.data.data || []); })
+          .catch(() => {});
       } else {
-        // Non-2xx with success=false handled by interceptor, but handle edge case
         toast.error(res.data.message || t('common.requestFailed'));
       }
     } catch (e) {
@@ -78,6 +104,50 @@ export default function Packages() {
         </p>
       </div>
 
+      {/* Active Subscriptions */}
+      {activeSubs.length > 0 && (
+        <div className="max-w-3xl mx-auto mb-10">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            {t('packages.mySubscriptions')}
+          </h2>
+          <div className="space-y-3">
+            {activeSubs.map((sub) => {
+              const total = sub.amount_total || 0;
+              const used = sub.amount_used || 0;
+              const remain = Math.max(0, total - used);
+              const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+              return (
+                <div key={sub.id} className="glass rounded-xl p-4 border border-neutral-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">
+                      {t('packages.subscriptionId', { id: sub.id })}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                      {t('packages.active')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-neutral-400 mb-3">
+                    <span>{t('packages.expires')}: {formatDate(sub.end_time)}</span>
+                    {sub.next_reset_time > 0 && (
+                      <span>{t('packages.nextReset')}: {formatDate(sub.next_reset_time)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex-1 h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
+                        style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs text-neutral-400 whitespace-nowrap">
+                      ${(remain / Q).toFixed(2)} / ${(total / Q).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {enabled.length === 0 ? (
         <div className="text-center py-12 text-neutral-400">
           <p>{t('packages.noPackages')}</p>
@@ -87,7 +157,10 @@ export default function Packages() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {enabled.map((pkg, i) => (
+          {enabled.map((pkg, i) => {
+            const resetPeriod = pkg.quota_reset_period || 'never';
+            const isSubscription = resetPeriod !== 'never';
+            return (
             <SpotlightCard
               key={pkg.id}
               className="!bg-neutral-900/60 !border-neutral-800/60 !p-0 !rounded-2xl flex flex-col"
@@ -96,7 +169,14 @@ export default function Packages() {
               <div className="p-6 flex-1 flex flex-col">
                 {/* Header */}
                 <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-white">{pkg.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold text-white">{pkg.name}</h3>
+                    {isSubscription && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        {getResetLabel(resetPeriod)}
+                      </span>
+                    )}
+                  </div>
                   {pkg.description && (
                     <p className="text-sm text-neutral-400 mt-1">{pkg.description}</p>
                   )}
@@ -122,15 +202,18 @@ export default function Packages() {
                       <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {t('packages.creditIncluded', { amount: (pkg.quota_amount / Q).toFixed(2) })}
+                      {isSubscription
+                        ? t('packages.periodicQuota', { amount: (pkg.quota_amount / Q).toFixed(2), period: getResetLabel(resetPeriod) })
+                        : t('packages.creditIncluded', { amount: (pkg.quota_amount / Q).toFixed(2) })
+                      }
                     </li>
                   )}
-                  {pkg.rate_limit > 0 && (
+                  {isSubscription && (
                     <li className="flex items-center gap-2 text-sm text-neutral-300">
-                      <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      {t('packages.requestsMin', { count: pkg.rate_limit })}
+                      {t('packages.unusedQuotaExpires')}
                     </li>
                   )}
                   <li className="flex items-center gap-2 text-sm text-neutral-300">
@@ -157,7 +240,7 @@ export default function Packages() {
                 </button>
               </div>
             </SpotlightCard>
-          ))}
+          )})}
         </div>
       )}
 
@@ -166,6 +249,8 @@ export default function Packages() {
         const userBalance = (user?.quota || 0) / Q;
         const pkgPrice = Number(confirmPkg.price);
         const insufficient = userBalance < pkgPrice;
+        const resetPeriod = confirmPkg.quota_reset_period || 'never';
+        const isSubscription = resetPeriod !== 'never';
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => !subscribing && setConfirmPkg(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -173,6 +258,17 @@ export default function Packages() {
             <p className="text-sm text-neutral-400 mb-2">
               {t('packages.confirmDesc', { name: confirmPkg.name, price: pkgPrice.toFixed(2) })}
             </p>
+            {isSubscription && (
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 mb-3">
+                <p className="text-xs text-purple-300">
+                  {t('packages.subscriptionInfo', {
+                    period: getResetLabel(resetPeriod),
+                    days: confirmPkg.duration || 30,
+                    amount: (confirmPkg.quota_amount / Q).toFixed(2),
+                  })}
+                </p>
+              </div>
+            )}
             <p className="text-sm text-neutral-400 mb-4">
               {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
             </p>

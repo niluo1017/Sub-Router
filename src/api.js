@@ -66,6 +66,7 @@ export const deleteToken = (id) => api.delete(`/api/dist/token/${id}`);
 // ===== Purchase =====
 export const redeemCode = (key) => api.post('/api/dist/topup/redeem', { key }); // backend field is "key"
 export const subscribePackage = (packageId) => api.post('/api/dist/package/subscribe', { package_id: packageId });
+export const getActiveSubscriptions = () => api.get('/api/dist/package/subscriptions');
 
 // ===== Online Topup =====
 export const getTopupInfo = () => api.get('/api/dist/topup/info');
