@@ -399,7 +399,7 @@ export default function Topup() {
               <p className="text-xs text-page-muted mt-2">{t('topup.calculating')}</p>
             ) : payAmount ? (
               <p className="text-xs text-page-secondary mt-2">
-                {t('topup.payAmountLabel')}: <span className="text-green-400 font-medium">${payAmount}</span>
+                {t('topup.payAmountLabel')}: <span className="text-green-400 font-medium">¥{payAmount}</span>
               </p>
             ) : null}
           </div>
