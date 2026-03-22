@@ -120,7 +120,6 @@ export default function Pricing() {
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.model')}</th>
-                <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.vendor')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.inputPrice')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.outputPrice')}</th>
                 <th className="text-center px-5 py-3.5 font-medium text-page-secondary">{t('pricing.status')}</th>
@@ -131,13 +130,6 @@ export default function Pricing() {
                 <tr key={m.model_name || i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
                   <td className="px-5 py-3.5">
                     <span className="font-mono text-page">{m.display_name || m.model_name}</span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {m.vendor_name ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-white/[0.06] text-page-secondary border border-white/[0.08]">
-                        {m.vendor_name}
-                      </span>
-                    ) : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
                     {m.input_price != null ? `$${(Number(m.input_price) * 1000).toFixed(4)}` : '-'}
