@@ -2,28 +2,21 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSiteModels } from '../api';
 
-const CATEGORIES = [
-  { value: '', icon: '🌐', labelKey: 'pricing.catAll' },
-  { value: 'chat', icon: '💬', labelKey: 'pricing.catChat' },
-  { value: 'completion', icon: '✍️', labelKey: 'pricing.catCompletion' },
-  { value: 'embedding', icon: '📐', labelKey: 'pricing.catEmbedding' },
-  { value: 'image', icon: '🖼️', labelKey: 'pricing.catImage' },
-  { value: 'audio', icon: '🎵', labelKey: 'pricing.catAudio' },
-  { value: 'video', icon: '🎬', labelKey: 'pricing.catVideo' },
-  { value: 'rerank', icon: '🔀', labelKey: 'pricing.catRerank' },
-];
-
 export default function Pricing() {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [vendor, setVendor] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getSiteModels()
       .then((r) => {
-        if (r.data.success) setModels(r.data.data || []);
+        if (r.data.success) {
+          setModels(r.data.data || []);
+          setVendors(r.data.vendors || []);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -31,17 +24,17 @@ export default function Pricing() {
 
   const enabledModels = models.filter((m) => m.enabled !== false);
 
-  // Collect categories that actually have models
-  const availableCategories = useMemo(() => {
-    const cats = new Set(enabledModels.map((m) => m.category || 'chat'));
-    return CATEGORIES.filter((c) => c.value === '' || cats.has(c.value));
-  }, [enabledModels]);
+  // Collect vendor names that actually have models
+  const availableVendors = useMemo(() => {
+    const vendorNames = new Set(enabledModels.map((m) => m.vendor_name).filter(Boolean));
+    return vendors.filter((v) => vendorNames.has(v.name));
+  }, [enabledModels, vendors]);
 
   const filtered = useMemo(() => {
     let list = enabledModels;
-    // Category filter
-    if (category) {
-      list = list.filter((m) => (m.category || 'chat') === category);
+    // Vendor filter
+    if (vendor) {
+      list = list.filter((m) => m.vendor_name === vendor);
     }
     // Search filter
     if (search) {
@@ -53,7 +46,7 @@ export default function Pricing() {
     // Sort by input_price ascending
     list = [...list].sort((a, b) => (Number(a.input_price) || 0) - (Number(b.input_price) || 0));
     return list;
-  }, [enabledModels, category, search]);
+  }, [enabledModels, vendor, search]);
 
   if (loading) {
     return (
@@ -72,23 +65,34 @@ export default function Pricing() {
         </p>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex flex-wrap justify-center gap-2 mb-6">
-        {availableCategories.map((cat) => (
+      {/* Vendor Filter */}
+      {availableVendors.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
           <button
-            key={cat.value}
-            onClick={() => setCategory(cat.value)}
+            onClick={() => setVendor('')}
             className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-              category === cat.value
+              !vendor
                 ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
                 : 'glass-sm text-page-secondary hover:text-page hover:bg-white/[0.08]'
             }`}
           >
-            <span>{cat.icon}</span>
-            <span>{t(cat.labelKey)}</span>
+            {t('pricing.allVendors')}
           </button>
-        ))}
-      </div>
+          {availableVendors.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setVendor(v.name)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                vendor === v.name
+                  ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
+                  : 'glass-sm text-page-secondary hover:text-page hover:bg-white/[0.08]'
+              }`}
+            >
+              {v.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <div className="max-w-md mx-auto mb-8">
@@ -108,7 +112,7 @@ export default function Pricing() {
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-page-secondary">
-          {search || category ? t('pricing.noMatch') : t('pricing.noModels')}
+          {search || vendor ? t('pricing.noMatch') : t('pricing.noModels')}
         </div>
       ) : (
         <div className="glass-sm rounded-xl overflow-hidden">
@@ -116,6 +120,7 @@ export default function Pricing() {
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.model')}</th>
+                <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.vendor')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.inputPrice')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.outputPrice')}</th>
                 <th className="text-center px-5 py-3.5 font-medium text-page-secondary">{t('pricing.status')}</th>
@@ -126,6 +131,13 @@ export default function Pricing() {
                 <tr key={m.model_name || i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
                   <td className="px-5 py-3.5">
                     <span className="font-mono text-page">{m.display_name || m.model_name}</span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {m.vendor_name ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-white/[0.06] text-page-secondary border border-white/[0.08]">
+                        {m.vendor_name}
+                      </span>
+                    ) : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
                     {m.input_price != null ? `$${(Number(m.input_price) * 1000).toFixed(4)}` : '-'}
