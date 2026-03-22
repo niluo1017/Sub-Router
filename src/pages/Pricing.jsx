@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSiteModels } from '../api';
+
+const CATEGORIES = [
+  { value: '', icon: '🌐', labelKey: 'pricing.catAll' },
+  { value: 'chat', icon: '💬', labelKey: 'pricing.catChat' },
+  { value: 'completion', icon: '✍️', labelKey: 'pricing.catCompletion' },
+  { value: 'embedding', icon: '📐', labelKey: 'pricing.catEmbedding' },
+  { value: 'image', icon: '🖼️', labelKey: 'pricing.catImage' },
+  { value: 'audio', icon: '🎵', labelKey: 'pricing.catAudio' },
+  { value: 'video', icon: '🎬', labelKey: 'pricing.catVideo' },
+  { value: 'rerank', icon: '🔀', labelKey: 'pricing.catRerank' },
+];
 
 export default function Pricing() {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,10 +31,29 @@ export default function Pricing() {
 
   const enabledModels = models.filter((m) => m.enabled !== false);
 
-  const filtered = enabledModels.filter((m) =>
-    !search ||
-    (m.display_name || m.model_name || '').toLowerCase().includes(search.toLowerCase())
-  );
+  // Collect categories that actually have models
+  const availableCategories = useMemo(() => {
+    const cats = new Set(enabledModels.map((m) => m.category || 'chat'));
+    return CATEGORIES.filter((c) => c.value === '' || cats.has(c.value));
+  }, [enabledModels]);
+
+  const filtered = useMemo(() => {
+    let list = enabledModels;
+    // Category filter
+    if (category) {
+      list = list.filter((m) => (m.category || 'chat') === category);
+    }
+    // Search filter
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((m) =>
+        (m.display_name || m.model_name || '').toLowerCase().includes(q)
+      );
+    }
+    // Sort by input_price ascending
+    list = [...list].sort((a, b) => (Number(a.input_price) || 0) - (Number(b.input_price) || 0));
+    return list;
+  }, [enabledModels, category, search]);
 
   if (loading) {
     return (
@@ -39,6 +70,24 @@ export default function Pricing() {
         <p className="text-page-secondary max-w-xl mx-auto">
           {t('pricing.subtitle')}
         </p>
+      </div>
+
+      {/* Category Filter */}
+      <div className="flex flex-wrap justify-center gap-2 mb-6">
+        {availableCategories.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setCategory(cat.value)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+              category === cat.value
+                ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
+                : 'glass-sm text-page-secondary hover:text-page hover:bg-white/[0.08]'
+            }`}
+          >
+            <span>{cat.icon}</span>
+            <span>{t(cat.labelKey)}</span>
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -59,7 +108,7 @@ export default function Pricing() {
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-page-secondary">
-          {search ? t('pricing.noMatch') : t('pricing.noModels')}
+          {search || category ? t('pricing.noMatch') : t('pricing.noModels')}
         </div>
       ) : (
         <div className="glass-sm rounded-xl overflow-hidden">
