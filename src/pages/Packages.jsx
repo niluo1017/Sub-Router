@@ -102,6 +102,24 @@ export default function Packages() {
         <p className="text-page-secondary max-w-xl mx-auto">
           {t('packages.subtitle')}
         </p>
+
+        {/* Limited-time offer banner */}
+        <div className="mt-6 max-w-2xl mx-auto">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-500/20 px-5 py-4">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.08),transparent_60%)]" />
+            <div className="relative flex items-center justify-center gap-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider animate-pulse">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t('packages.limitedTime')}
+              </span>
+              <p className="text-sm text-amber-200/90">
+                {t('packages.limitedTimeDesc')}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Active Subscriptions */}
@@ -167,6 +185,16 @@ export default function Packages() {
               spotlightColor={spotlightColors[i % spotlightColors.length]}
             >
               <div className="p-6 flex-1 flex flex-col">
+                {/* Limited-time badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {t('packages.specialPrice')}
+                  </span>
+                </div>
+
                 {/* Header */}
                 <div className="mb-4">
                   <div className="flex items-center gap-2">
@@ -189,10 +217,16 @@ export default function Packages() {
                     {pkg.original_price > 0 && pkg.original_price > pkg.price && (
                       <span className="text-lg text-page-muted line-through">${Number(pkg.original_price).toFixed(2)}</span>
                     )}
+                    {pkg.original_price > 0 && pkg.original_price > pkg.price && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-semibold">
+                        -{Math.round((1 - pkg.price / pkg.original_price) * 100)}%
+                      </span>
+                    )}
                   </div>
                   {pkg.duration > 0 && (
                     <p className="text-sm text-page-muted mt-1">{t('packages.daysAccess', { count: pkg.duration })}</p>
                   )}
+                  <p className="text-[11px] text-amber-400/70 mt-1.5">{t('packages.priceWillIncrease')}</p>
                 </div>
 
                 {/* Features */}

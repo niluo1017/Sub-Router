@@ -180,6 +180,10 @@
     "packages.resetMonthly": "Resets monthly",
     "packages.periodicQuota": "${{amount}} {{period}} quota",
     "packages.subscriptionInfo": "This is a subscription ({{period}}), valid for {{days}} days. Each period grants ${{amount}} quota. Unused quota expires.",
+    "packages.limitedTime": "Limited Time Offer",
+    "packages.limitedTimeDesc": "Current prices are introductory specials. API requests consume significant server and network resources — prices will increase in the future.",
+    "packages.specialPrice": "Special Price",
+    "packages.priceWillIncrease": "Introductory price — will increase later",
 
     "common.sessionExpired": "Session expired, please log in again",
     "common.requestFailed": "Request failed",
