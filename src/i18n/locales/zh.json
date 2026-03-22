@@ -180,10 +180,6 @@
     "packages.resetMonthly": "每月重置",
     "packages.periodicQuota": "{{period}}额度 ${{amount}}",
     "packages.subscriptionInfo": "📋 此套餐为周期订阅（{{period}}），有效期 {{days}} 天。每个周期获得 ${{amount}} 额度，未用完作废。",
-    "packages.limitedTime": "限时特惠",
-    "packages.limitedTimeDesc": "当前价格为限时特价！API 请求对服务器及网络资源消耗巨大，此价格已非常优惠，未来将会涨价。",
-    "packages.specialPrice": "特惠价",
-    "packages.priceWillIncrease": "限时特价 · 后续将涨价",
 
     "common.sessionExpired": "会话已过期，请重新登录",
     "common.requestFailed": "请求失败",
