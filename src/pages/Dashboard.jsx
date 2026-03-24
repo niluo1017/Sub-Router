@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getUserUsage, redeemCode, Q, quotaToDollar } from '../api';
-import SpotlightCard from '../components/bits/SpotlightCard';
 import CountUp from '../components/bits/CountUp';
-import ShinyText from '../components/bits/ShinyText';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
@@ -33,14 +31,12 @@ export default function Dashboard() {
       if (res.data.success) {
         toast.success(t('dashboard.redeemSuccess'));
         setRedeemInput('');
-        // Refresh both usage AND user data to update balance
         await Promise.all([loadUsage(), refreshUser()]);
       }
     } catch (err) { /* interceptor */ }
     setRedeeming(false);
   };
 
-  // Use usage data (fresh from API) for balance/used — NOT stale user object
   const quota = usage?.quota ?? user?.quota ?? 0;
   const usedQuota = usage?.used_quota ?? user?.used_quota ?? 0;
   const requestCount = usage?.request_count ?? user?.request_count ?? 0;
@@ -51,35 +47,35 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="mb-8">
         <h1 className="text-2xl font-heading font-bold text-page mb-1">
-          {t('dashboard.welcome')} <ShinyText text={user?.display_name || user?.username || 'User'} className="!inline" speed={3} color="#a5b4fc" shineColor="#e0e7ff" />
+          {t('dashboard.welcome')} {user?.display_name || user?.username || 'User'}
         </h1>
         <p className="text-sm text-page-secondary">{t('dashboard.manageDesc')}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(34,197,94,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
             $<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
-        </SpotlightCard>
+        </div>
 
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(129,140,248,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
             $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: usedQuota.toLocaleString() })}</p>
-        </SpotlightCard>
+        </div>
 
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(244,114,182,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.totalRequests')}</p>
           <div className="text-3xl font-bold text-page">
             <CountUp from={0} to={requestCount} duration={1.5} />
           </div>
-        </SpotlightCard>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -105,15 +101,15 @@ export default function Dashboard() {
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-page mb-4">{t('dashboard.quickLinks')}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <Link to="/tokens" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
+            <Link to="/tokens" className="glass-sm !rounded-xl px-4 py-3 hover:bg-page-surface-hover transition-colors group">
               <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.apiKeys')}</p>
               <p className="text-xs text-page-muted">{t('dashboard.manageKeys')}</p>
             </Link>
-            <Link to="/packages" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
+            <Link to="/packages" className="glass-sm !rounded-xl px-4 py-3 hover:bg-page-surface-hover transition-colors group">
               <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.packages')}</p>
               <p className="text-xs text-page-muted">{t('dashboard.viewPlans')}</p>
             </Link>
-            <Link to="/pricing" className="glass-sm !rounded-xl px-4 py-3 hover:bg-white/[0.06] transition-colors group">
+            <Link to="/pricing" className="glass-sm !rounded-xl px-4 py-3 hover:bg-page-surface-hover transition-colors group">
               <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.pricing')}</p>
               <p className="text-xs text-page-muted">{t('dashboard.modelPrices')}</p>
             </Link>

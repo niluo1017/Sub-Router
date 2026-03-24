@@ -73,7 +73,7 @@ export default function Pricing() {
             className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
               !vendor
                 ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
-                : 'glass-sm text-page-secondary hover:text-page hover:bg-white/[0.08]'
+                : 'glass-sm text-page-secondary hover:text-page hover:bg-page-surface-hover'
             }`}
           >
             {t('pricing.allVendors')}
@@ -85,7 +85,7 @@ export default function Pricing() {
               className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
                 vendor === v.name
                   ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
-                  : 'glass-sm text-page-secondary hover:text-page hover:bg-white/[0.08]'
+                  : 'glass-sm text-page-secondary hover:text-page hover:bg-page-surface-hover'
               }`}
             >
               {v.name}
@@ -118,7 +118,7 @@ export default function Pricing() {
         <div className="glass-sm rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
+              <tr className="border-b border-page-divider">
                 <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.model')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.inputPrice')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.outputPrice')}</th>
@@ -127,7 +127,7 @@ export default function Pricing() {
             </thead>
             <tbody>
               {filtered.map((m, i) => (
-                <tr key={m.model_name || i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                <tr key={m.model_name || i} className="border-b border-page-divider last:border-0 hover:bg-page-surface transition-colors">
                   <td className="px-5 py-3.5">
                     <span className="font-mono text-page">{m.display_name || m.model_name}</span>
                   </td>
@@ -140,8 +140,8 @@ export default function Pricing() {
                   <td className="px-5 py-3.5 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
                       m.status === 'healthy'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-neutral-500/10 text-page-secondary border-neutral-500/20'
+                        ? 'bg-green-500/10 text-page-success border-green-500/20'
+                        : 'bg-page-surface text-page-secondary border-page-divider'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${m.status === 'healthy' ? 'bg-green-500' : 'bg-neutral-500'}`} />
                       {m.status === 'healthy' ? t('pricing.online') : t('pricing.unknown')}

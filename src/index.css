@@ -5,16 +5,30 @@
 @layer base {
   :root {
     --brand: 99 102 241;
-    /* Light theme text colors (overridden by .theme-light) */
+    /* Text colors */
     --page-text: 255 255 255;
     --page-text-secondary: 163 163 163;
     --page-text-muted: 115 115 115;
     --page-label: 212 212 212;
+    --page-link: 129 140 248;
+    /* Surface colors */
     --page-card-bg: rgba(255,255,255,0.03);
     --page-card-border: rgba(255,255,255,0.06);
     --page-input-bg: rgba(255,255,255,0.04);
     --page-input-border: rgba(255,255,255,0.1);
-    --page-link: 129 140 248;
+    --page-surface: rgba(255,255,255,0.04);
+    --page-surface-hover: rgba(255,255,255,0.08);
+    --page-divider: rgba(255,255,255,0.06);
+    --page-inset: rgba(0,0,0,0.4);
+    /* Semantic colors — dark mode defaults */
+    --page-success: 74 222 128;
+    --page-success-text: 74 222 128;
+    --page-warning: 250 204 21;
+    --page-warning-text: 253 224 71;
+    --page-danger: 248 113 113;
+    --page-danger-text: 248 113 113;
+    --page-info: 192 132 252;
+    --page-info-text: 192 132 252;
   }
 
   body {
@@ -46,15 +60,33 @@
     --page-text-secondary: 107 114 128;
     --page-text-muted: 156 163 175;
     --page-label: 55 65 81;
+    --page-link: 79 70 229;
     --page-card-bg: rgba(255,255,255,0.85);
     --page-card-border: rgb(229,231,235);
     --page-input-bg: #fff;
     --page-input-border: rgb(209,213,219);
-    --page-link: 79 70 229;
+    --page-surface: rgba(0,0,0,0.03);
+    --page-surface-hover: rgba(0,0,0,0.06);
+    --page-divider: rgb(229,231,235);
+    --page-inset: rgba(0,0,0,0.04);
+    --page-success: 22 163 74;
+    --page-success-text: 22 163 74;
+    --page-warning: 202 138 4;
+    --page-warning-text: 161 98 7;
+    --page-danger: 220 38 38;
+    --page-danger-text: 220 38 38;
+    --page-info: 124 58 237;
+    --page-info-text: 124 58 237;
   }
 
   .theme-claude {
     --page-link: 217 119 87;
+    --page-card-bg: rgba(255,255,255,0.7);
+    --page-card-border: #E8DDD0;
+    --page-surface: rgba(61,48,36,0.04);
+    --page-surface-hover: rgba(61,48,36,0.08);
+    --page-divider: #E8DDD0;
+    --page-inset: rgba(61,48,36,0.06);
   }
 }
 
@@ -181,4 +213,35 @@
 }
 .theme-claude .btn-secondary:hover {
   background-color: rgba(217,119,87,0.05);
+}
+
+/* ═══════════════════════════════════════════════
+   Theme-aware utility classes for surfaces/dividers
+   ═══════════════════════════════════════════════ */
+.surface {
+  background: var(--page-surface);
+}
+.surface-hover:hover {
+  background: var(--page-surface-hover);
+}
+.bg-page-inset {
+  background: var(--page-inset);
+}
+.divide-page > * + * {
+  border-color: var(--page-divider);
+}
+.border-page-divider {
+  border-color: var(--page-divider);
+}
+.bg-page-surface {
+  background: var(--page-surface);
+}
+.bg-page-surface-hover {
+  background: var(--page-surface-hover);
+}
+.hover\:bg-page-surface:hover {
+  background: var(--page-surface);
+}
+.hover\:bg-page-surface-hover:hover {
+  background: var(--page-surface-hover);
 }

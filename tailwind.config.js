@@ -37,6 +37,10 @@ export default {
           muted: 'rgb(var(--page-text-muted) / <alpha-value>)',
           label: 'rgb(var(--page-label) / <alpha-value>)',
           link: 'rgb(var(--page-link) / <alpha-value>)',
+          success: 'rgb(var(--page-success-text) / <alpha-value>)',
+          warning: 'rgb(var(--page-warning-text) / <alpha-value>)',
+          danger: 'rgb(var(--page-danger-text) / <alpha-value>)',
+          info: 'rgb(var(--page-info-text) / <alpha-value>)',
         },
       },
       animation: {

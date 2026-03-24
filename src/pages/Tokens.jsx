@@ -149,12 +149,12 @@ export default function Tokens() {
           <div className="glass rounded-2xl p-6 w-full max-w-lg">
             <h2 className="text-lg font-semibold text-page mb-2">{t('tokens.newApiKey')}</h2>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 mb-4">
-              <p className="text-sm text-yellow-300">
+              <p className="text-sm text-page-warning">
                 {t('tokens.keyWarning')}
               </p>
             </div>
-            <div className="bg-black/40 rounded-xl p-4 flex items-center gap-3">
-              <code className="text-sm font-mono text-green-400 flex-1 break-all select-all">
+            <div className="bg-page-inset rounded-xl p-4 flex items-center gap-3">
+              <code className="text-sm font-mono text-page-success flex-1 break-all select-all">
                 {newKey}
               </code>
               <button
@@ -194,8 +194,8 @@ export default function Tokens() {
       {/* Token List */}
       {tokens.length === 0 ? (
         <div className="glass rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-800/50 flex items-center justify-center">
-            <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-page-surface flex items-center justify-center">
+            <svg className="w-8 h-8 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
@@ -210,7 +210,7 @@ export default function Tokens() {
             <div key={token.id} className="glass-sm rounded-xl p-5">
               <div className="flex items-center gap-4">
                 {/* Status dot */}
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-neutral-600'}`} />
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
@@ -228,15 +228,15 @@ export default function Tokens() {
                     onClick={() => handleToggle(token)}
                     className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
                       token.status === 1
-                        ? 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-                        : 'border-neutral-600 text-page-secondary hover:bg-neutral-800'
+                        ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
+                        : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
                     }`}
                   >
                     {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(token)}
-                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
                   >
                     {t('tokens.delete')}
                   </button>
@@ -245,13 +245,13 @@ export default function Tokens() {
 
               {/* Key row — always visible with copy button */}
               {token.key && (
-                <div className="mt-3 flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2">
+                <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
                   <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
                     sk-{token.key}
                   </code>
                   <button
                     onClick={() => handleCopy('sk-' + token.key)}
-                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-white/10 text-page-secondary hover:bg-white/20 hover:text-page transition-colors"
+                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
                   >
                     {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
                   </button>

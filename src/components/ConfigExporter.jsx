@@ -258,7 +258,7 @@ print(message.content[0].text)`;
   return (
     <div className="glass rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-white/5">
+      <div className="px-5 py-4 border-b border-page-divider">
         <h4 className="font-semibold text-sm text-page flex items-center gap-2">
           <svg className="w-4 h-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -316,14 +316,14 @@ print(message.content[0].text)`;
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               {modelDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-white/10 bg-neutral-900 shadow-xl">
+                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg glass shadow-xl">
                   {availableModels
                     .filter(m => m.toLowerCase().includes(modelSearch.toLowerCase()))
                     .map((model) => (
                       <button
                         key={model}
                         onClick={() => { setSelectedModel(model); setModelDropdownOpen(false); setModelSearch(''); }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-white/10 ${
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-page-surface-hover ${
                           model === selectedModel ? 'text-brand-400 bg-brand-500/10' : 'text-page-secondary'
                         }`}
                       >
@@ -351,7 +351,7 @@ print(message.content[0].text)`;
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   selectedTool === tool.id
                     ? 'bg-brand-500 text-white shadow-sm'
-                    : 'bg-white/5 text-page-secondary hover:bg-white/10'
+                    : 'bg-page-surface text-page-secondary hover:bg-page-surface-hover'
                 }`}
               >
                 {tool.name}
@@ -362,8 +362,8 @@ print(message.content[0].text)`;
       </div>
 
       {/* Config Preview */}
-      <div className="border-t border-white/5">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-black/20">
+      <div className="border-t border-page-divider">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-page-inset">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
@@ -377,25 +377,25 @@ print(message.content[0].text)`;
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-page-muted hover:text-page"
+              className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page"
               title={t('config.copy')}
             >
               {copied ? (
-                <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <svg className="w-3.5 h-3.5 text-page-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               ) : (
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               )}
             </button>
             <button
               onClick={handleDownload}
-              className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-page-muted hover:text-page"
+              className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page"
               title={t('config.download')}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </button>
           </div>
         </div>
-        <pre className="p-4 text-xs leading-relaxed overflow-x-auto max-h-64 font-mono text-green-400">
+        <pre className="p-4 text-xs leading-relaxed overflow-x-auto max-h-64 font-mono text-page-success">
           <code>{config}</code>
         </pre>
       </div>

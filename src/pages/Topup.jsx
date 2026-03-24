@@ -8,7 +8,6 @@ import {
   createCryptoOrder, getCryptoOrderStatus, getTopupHistory,
   Q, quotaToDollar,
 } from '../api';
-import SpotlightCard from '../components/bits/SpotlightCard';
 import CountUp from '../components/bits/CountUp';
 import toast from 'react-hot-toast';
 
@@ -322,27 +321,27 @@ export default function Topup() {
 
       {/* Balance Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(34,197,94,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
             $<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
-        </SpotlightCard>
+        </div>
 
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(129,140,248,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
             $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
           </div>
-        </SpotlightCard>
+        </div>
 
-        <SpotlightCard className="!bg-neutral-900/60 !border-neutral-800/60 !p-6" spotlightColor="rgba(244,114,182,0.15)">
+        <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.totalRequests')}</p>
           <div className="text-3xl font-bold text-page">
             <CountUp from={0} to={requestCount} duration={1.5} />
           </div>
-        </SpotlightCard>
+        </div>
       </div>
 
       {/* Online Topup - EPay & Stripe */}
@@ -369,7 +368,7 @@ export default function Topup() {
                   className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
                     selectedPreset === val
                       ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
-                      : 'glass-sm text-page-label hover:text-page hover:bg-white/[0.08]'
+                      : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
                   ${val}
@@ -399,7 +398,7 @@ export default function Topup() {
               <p className="text-xs text-page-muted mt-2">{t('topup.calculating')}</p>
             ) : payAmount ? (
               <p className="text-xs text-page-secondary mt-2">
-                {t('topup.payAmountLabel')}: <span className="text-green-400 font-medium">¥{payAmount}</span>
+                {t('topup.payAmountLabel')}: <span className="text-page-success font-medium">¥{payAmount}</span>
               </p>
             ) : null}
           </div>
@@ -415,7 +414,7 @@ export default function Topup() {
                     key={method.type}
                     onClick={() => handlePay(method.type)}
                     disabled={paymentLoading || !amount}
-                    className="px-4 py-2.5 rounded-xl text-sm font-medium glass-sm text-page-label hover:text-page hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium glass-sm text-page-label hover:text-page hover:bg-page-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
                     {isCurrentLoading ? t('topup.processing') : method.name}
                   </button>
@@ -437,12 +436,12 @@ export default function Topup() {
                 className={`glass-sm rounded-xl p-4 cursor-pointer transition-all ${
                   selectedCreemProduct?.productId === product.productId
                     ? 'ring-2 ring-brand-500 bg-brand-500/10'
-                    : 'hover:bg-white/[0.06]'
+                    : 'hover:bg-page-surface'
                 }`}
                 onClick={() => setSelectedCreemProduct(product)}
               >
                 <h3 className="text-sm font-semibold text-page mb-1">{product.name}</h3>
-                <p className="text-xl font-bold text-green-400 mb-1">
+                <p className="text-xl font-bold text-page-success mb-1">
                   ${product.price} <span className="text-xs text-page-muted font-normal">{product.currency || 'USD'}</span>
                 </p>
                 {product.quota && (
@@ -499,7 +498,7 @@ export default function Topup() {
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     selectedChain === chain.key
                       ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
-                      : 'glass-sm text-page-label hover:text-page hover:bg-white/[0.08]'
+                      : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
                   {chain.label}
@@ -519,7 +518,7 @@ export default function Topup() {
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     selectedToken === token
                       ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
-                      : 'glass-sm text-page-label hover:text-page hover:bg-white/[0.08]'
+                      : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
                   {token.toUpperCase()}
@@ -599,10 +598,10 @@ export default function Topup() {
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     item.status === 'success'
-                      ? 'bg-green-500/10 text-green-400'
+                      ? 'bg-green-500/10 text-page-success'
                       : item.status === 'pending'
-                        ? 'bg-yellow-500/10 text-yellow-400'
-                        : 'bg-red-500/10 text-red-400'
+                        ? 'bg-yellow-500/10 text-page-warning'
+                        : 'bg-red-500/10 text-page-danger'
                   }`}>
                     {item.status === 'success' ? t('topup.statusSuccess') : item.status === 'pending' ? t('topup.statusPending') : t('topup.statusFailed')}
                   </span>
