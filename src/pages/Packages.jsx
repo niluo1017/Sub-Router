@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getSitePackages, getSiteModels, subscribePackage, getActiveSubscriptions, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
+import { calcOfficialEquiv } from '../utils/officialEquiv';
 import toast from 'react-hot-toast';
 
 const resetLabelKeys = {
@@ -13,68 +14,9 @@ const resetLabelKeys = {
   monthly: 'packages.resetMonthly',
 };
 
-// Official prices (input $/1K tokens) for reference models
-const OFFICIAL_PRICES = [
-  { pattern: 'claude-4-sonnet', label: 'Claude Sonnet 4', inputPerMtok: 3 },
-  { pattern: 'claude-sonnet-4', label: 'Claude Sonnet 4', inputPerMtok: 3 },
-  { pattern: 'claude-4.5-sonnet', label: 'Claude 4.5 Sonnet', inputPerMtok: 3 },
-  { pattern: 'claude-4.6-sonnet', label: 'Claude 4.6 Sonnet', inputPerMtok: 3 },
-  { pattern: 'claude-4-opus', label: 'Claude Opus 4', inputPerMtok: 15 },
-  { pattern: 'claude-opus-4', label: 'Claude Opus 4', inputPerMtok: 15 },
-  { pattern: 'claude-4.1-opus', label: 'Claude Opus 4.1', inputPerMtok: 15 },
-  { pattern: 'claude-4.5-opus', label: 'Claude Opus 4.5', inputPerMtok: 5 },
-  { pattern: 'claude-4.6-opus', label: 'Claude Opus 4.6', inputPerMtok: 5 },
-  { pattern: 'claude-3.5-haiku', label: 'Claude 3.5 Haiku', inputPerMtok: 0.8 },
-  { pattern: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', inputPerMtok: 0.8 },
-  { pattern: 'gpt-5.1', label: 'GPT-5.1', inputPerMtok: 1.25 },
-  { pattern: 'gpt-5.2', label: 'GPT-5.2', inputPerMtok: 1.75 },
-  { pattern: 'gpt-5.3', label: 'GPT-5.3', inputPerMtok: 1.75 },
-  { pattern: 'gpt-5.4', label: 'GPT-5.4', inputPerMtok: 2.5 },
-  { pattern: 'gpt-4o', label: 'GPT-4o', inputPerMtok: 2.5 },
-  { pattern: 'gpt-4.1', label: 'GPT-4.1', inputPerMtok: 2 },
-];
-
 function formatDate(unix) {
   if (!unix) return '';
   return new Date(unix * 1000).toLocaleDateString();
-}
-
-// Find the best official equivalent for the package
-function calcOfficialEquiv(models, quotaDollars) {
-  if (!models || models.length === 0 || quotaDollars <= 0) return null;
-
-  // For each model on this site, find its official counterpart
-  let bestResult = null;
-
-  for (const m of models) {
-    const siteInputPrice = Number(m.input_price); // $/1K tokens
-    if (!siteInputPrice || siteInputPrice <= 0) continue;
-
-    const modelName = (m.model_name || '').toLowerCase();
-
-    for (const official of OFFICIAL_PRICES) {
-      if (modelName.includes(official.pattern.toLowerCase())) {
-        // Site price is per 1K tokens, official is per 1M tokens
-        // Convert site price to per 1M: siteInputPrice * 1000
-        const sitePricePerMtok = siteInputPrice * 1000;
-        const ratio = official.inputPerMtok / sitePricePerMtok;
-        const equivDollars = quotaDollars * ratio;
-
-        if (!bestResult || equivDollars > bestResult.equivDollars) {
-          bestResult = {
-            label: official.label,
-            equivDollars,
-            ratio,
-            officialPrice: official.inputPerMtok,
-            sitePrice: sitePricePerMtok,
-          };
-        }
-        break;
-      }
-    }
-  }
-
-  return bestResult;
 }
 
 export default function Packages() {
@@ -180,12 +122,12 @@ export default function Packages() {
               const remain = Math.max(0, total - used);
               const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
               return (
-                <div key={sub.id} className="glass rounded-xl p-4 border border-neutral-800/50">
+                <div key={sub.id} className="glass rounded-xl p-4 border border-page-divider">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-page">
                       {t('packages.subscriptionId', { id: sub.id })}
                     </span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-page-success border border-green-500/20">
                       {t('packages.active')}
                     </span>
                   </div>
@@ -196,7 +138,7 @@ export default function Packages() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mb-1">
-                    <div className="flex-1 h-2 bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-page-surface rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
                         style={{ width: `${pct}%` }} />
                     </div>
@@ -227,10 +169,9 @@ export default function Packages() {
             const equiv = calcOfficialEquiv(enabledModels, quotaDollars);
 
             return (
-            <SpotlightCard
+            <div
               key={pkg.id}
-              className="!bg-neutral-900/60 !border-neutral-800/60 !p-0 !rounded-2xl flex flex-col"
-              spotlightColor={spotlightColors[i % spotlightColors.length]}
+              className="glass rounded-2xl flex flex-col"
             >
               <div className="p-6 flex-1 flex flex-col">
                 {/* Header */}
@@ -238,7 +179,7 @@ export default function Packages() {
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-semibold text-page">{pkg.name}</h3>
                     {isSubscription && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-page-info border border-purple-500/20">
                         {getResetLabel(resetPeriod)}
                       </span>
                     )}
@@ -264,7 +205,7 @@ export default function Packages() {
                 {/* Official Equiv Banner */}
                 {equiv && equiv.equivDollars > quotaDollars && (
                   <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-3 mb-4">
-                    <p className="text-xs text-amber-300 font-medium">
+                    <p className="text-xs text-page-warning font-medium">
                       🔥 {t('packages.officialEquiv', {
                         model: equiv.label,
                         amount: Math.round(equiv.equivDollars),
@@ -277,7 +218,7 @@ export default function Packages() {
                 <ul className="space-y-2 mb-6 flex-1">
                   {pkg.quota_amount > 0 && (
                     <li className="flex items-center gap-2 text-sm text-page-label">
-                      <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-page-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       {isSubscription
@@ -288,20 +229,20 @@ export default function Packages() {
                   )}
                   {isSubscription && (
                     <li className="flex items-center gap-2 text-sm text-page-label">
-                      <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-page-warning flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       {t('packages.unusedQuotaExpires')}
                     </li>
                   )}
                   <li className="flex items-center gap-2 text-sm text-page-label">
-                    <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-page-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {t('packages.allModels')}
                   </li>
                   <li className="flex items-center gap-2 text-sm text-page-label">
-                    <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-page-success flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {t('packages.openaiApi')}
@@ -317,7 +258,7 @@ export default function Packages() {
                   {subscribing === pkg.id ? t('packages.processing') : user ? t('packages.subscribeNow') : t('packages.signUpToSubscribe')}
                 </button>
               </div>
-            </SpotlightCard>
+            </div>
           )})}
         </div>
       )}
@@ -338,7 +279,7 @@ export default function Packages() {
             </p>
             {isSubscription && (
               <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 mb-3">
-                <p className="text-xs text-purple-300">
+                <p className="text-xs text-page-info">
                   {t('packages.subscriptionInfo', {
                     period: getResetLabel(resetPeriod),
                     days: confirmPkg.duration || 30,
@@ -348,11 +289,11 @@ export default function Packages() {
               </div>
             )}
             <p className="text-sm text-page-secondary mb-4">
-              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-red-400' : 'text-green-400'}`}>${userBalance.toFixed(2)}</span>
+              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-page-danger' : 'text-page-success'}`}>${userBalance.toFixed(2)}</span>
             </p>
             {insufficient && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
-                <p className="text-sm text-red-300">{t('packages.insufficientBalance')}</p>
+                <p className="text-sm text-page-danger">{t('packages.insufficientBalance')}</p>
               </div>
             )}
             <div className="flex justify-end gap-3">

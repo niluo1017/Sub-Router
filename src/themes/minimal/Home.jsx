@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
-import { getSiteModels, getSitePackages } from '../../api';
+import { getSiteModels, getSitePackages, Q } from '../../api';
+import { calcOfficialEquiv } from '../../utils/officialEquiv';
 import CountUp from '../../components/bits/CountUp';
 import FadeContent from '../../components/bits/FadeContent';
 
@@ -137,7 +138,10 @@ export default function MinimalHome() {
             <p className="text-neutral-500 mb-10">{t('home.choosePlan')}</p>
 
             <div className="grid md:grid-cols-3 gap-4 max-w-4xl">
-              {packages.filter(p => p.enabled).slice(0, 3).map((pkg) => (
+              {packages.filter(p => p.enabled).slice(0, 3).map((pkg) => {
+                const quotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
+                const equiv = calcOfficialEquiv(enabledModels, quotaDollars);
+                return (
                 <div key={pkg.id} className="rounded-xl p-6 flex flex-col border border-neutral-800/60 hover:border-neutral-700 transition-colors">
                   <h3 className="text-base font-semibold text-white">{pkg.name}</h3>
                   {pkg.description && <p className="text-sm text-neutral-500 mt-1">{pkg.description}</p>}
@@ -148,11 +152,14 @@ export default function MinimalHome() {
                     )}
                     {pkg.duration > 0 && <p className="text-xs text-neutral-600 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                   </div>
+                  {equiv && equiv.equivDollars > quotaDollars && (
+                    <p className="text-xs text-amber-300/80 mt-2">🔥 {t('packages.officialEquiv', { model: equiv.label, amount: Math.round(equiv.equivDollars) })}</p>
+                  )}
                   <Link to={user ? '/packages' : '/register'} className="mt-4 py-2.5 rounded-lg bg-neutral-800 text-white font-medium text-sm text-center hover:bg-neutral-700 transition-colors">
                     {user ? t('home.subscribe') : t('home.getStarted')}
                   </Link>
                 </div>
-              ))}
+              )})}
             </div>
           </FadeContent>
         </section>
