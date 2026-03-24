@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { getSitePackages, subscribePackage, getActiveSubscriptions, Q } from '../api';
+import { getSitePackages, getSiteModels, subscribePackage, getActiveSubscriptions, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import toast from 'react-hot-toast';
 
@@ -13,9 +13,68 @@ const resetLabelKeys = {
   monthly: 'packages.resetMonthly',
 };
 
+// Official prices (input $/1K tokens) for reference models
+const OFFICIAL_PRICES = [
+  { pattern: 'claude-4-sonnet', label: 'Claude Sonnet 4', inputPerMtok: 3 },
+  { pattern: 'claude-sonnet-4', label: 'Claude Sonnet 4', inputPerMtok: 3 },
+  { pattern: 'claude-4.5-sonnet', label: 'Claude 4.5 Sonnet', inputPerMtok: 3 },
+  { pattern: 'claude-4.6-sonnet', label: 'Claude 4.6 Sonnet', inputPerMtok: 3 },
+  { pattern: 'claude-4-opus', label: 'Claude Opus 4', inputPerMtok: 15 },
+  { pattern: 'claude-opus-4', label: 'Claude Opus 4', inputPerMtok: 15 },
+  { pattern: 'claude-4.1-opus', label: 'Claude Opus 4.1', inputPerMtok: 15 },
+  { pattern: 'claude-4.5-opus', label: 'Claude Opus 4.5', inputPerMtok: 5 },
+  { pattern: 'claude-4.6-opus', label: 'Claude Opus 4.6', inputPerMtok: 5 },
+  { pattern: 'claude-3.5-haiku', label: 'Claude 3.5 Haiku', inputPerMtok: 0.8 },
+  { pattern: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', inputPerMtok: 0.8 },
+  { pattern: 'gpt-5.1', label: 'GPT-5.1', inputPerMtok: 1.25 },
+  { pattern: 'gpt-5.2', label: 'GPT-5.2', inputPerMtok: 1.75 },
+  { pattern: 'gpt-5.3', label: 'GPT-5.3', inputPerMtok: 1.75 },
+  { pattern: 'gpt-5.4', label: 'GPT-5.4', inputPerMtok: 2.5 },
+  { pattern: 'gpt-4o', label: 'GPT-4o', inputPerMtok: 2.5 },
+  { pattern: 'gpt-4.1', label: 'GPT-4.1', inputPerMtok: 2 },
+];
+
 function formatDate(unix) {
   if (!unix) return '';
   return new Date(unix * 1000).toLocaleDateString();
+}
+
+// Find the best official equivalent for the package
+function calcOfficialEquiv(models, quotaDollars) {
+  if (!models || models.length === 0 || quotaDollars <= 0) return null;
+
+  // For each model on this site, find its official counterpart
+  let bestResult = null;
+
+  for (const m of models) {
+    const siteInputPrice = Number(m.input_price); // $/1K tokens
+    if (!siteInputPrice || siteInputPrice <= 0) continue;
+
+    const modelName = (m.model_name || '').toLowerCase();
+
+    for (const official of OFFICIAL_PRICES) {
+      if (modelName.includes(official.pattern.toLowerCase())) {
+        // Site price is per 1K tokens, official is per 1M tokens
+        // Convert site price to per 1M: siteInputPrice * 1000
+        const sitePricePerMtok = siteInputPrice * 1000;
+        const ratio = official.inputPerMtok / sitePricePerMtok;
+        const equivDollars = quotaDollars * ratio;
+
+        if (!bestResult || equivDollars > bestResult.equivDollars) {
+          bestResult = {
+            label: official.label,
+            equivDollars,
+            ratio,
+            officialPrice: official.inputPerMtok,
+            sitePrice: sitePricePerMtok,
+          };
+        }
+        break;
+      }
+    }
+  }
+
+  return bestResult;
 }
 
 export default function Packages() {
@@ -23,6 +82,7 @@ export default function Packages() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [packages, setPackages] = useState([]);
+  const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(null);
   const [activeSubs, setActiveSubs] = useState([]);
@@ -32,10 +92,10 @@ export default function Packages() {
   const getResetLabel = (period) => t(resetLabelKeys[period] || resetLabelKeys.never);
 
   useEffect(() => {
-    getSitePackages()
-      .then((r) => { if (r.data.success) setPackages(r.data.data || []); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getSitePackages().then((r) => { if (r.data.success) setPackages(r.data.data || []); }).catch(() => {}),
+      getSiteModels().then((r) => { if (r.data.success) setModels(r.data.data || []); }).catch(() => {}),
+    ]).finally(() => setLoading(false));
   }, []);
 
   // Load active subscriptions
@@ -77,6 +137,9 @@ export default function Packages() {
     }
     setSubscribing(null);
   };
+
+  // Precompute official equivalents for each package
+  const enabledModels = useMemo(() => models.filter((m) => m.enabled !== false), [models]);
 
   if (loading) {
     return (
@@ -160,6 +223,9 @@ export default function Packages() {
           {enabled.map((pkg, i) => {
             const resetPeriod = pkg.quota_reset_period || 'never';
             const isSubscription = resetPeriod !== 'never';
+            const quotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
+            const equiv = calcOfficialEquiv(enabledModels, quotaDollars);
+
             return (
             <SpotlightCard
               key={pkg.id}
@@ -194,6 +260,18 @@ export default function Packages() {
                     <p className="text-sm text-page-muted mt-1">{t('packages.daysAccess', { count: pkg.duration })}</p>
                   )}
                 </div>
+
+                {/* Official Equiv Banner */}
+                {equiv && equiv.equivDollars > quotaDollars && (
+                  <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-3 mb-4">
+                    <p className="text-xs text-amber-300 font-medium">
+                      🔥 {t('packages.officialEquiv', {
+                        model: equiv.label,
+                        amount: Math.round(equiv.equivDollars),
+                      })}
+                    </p>
+                  </div>
+                )}
 
                 {/* Features */}
                 <ul className="space-y-2 mb-6 flex-1">

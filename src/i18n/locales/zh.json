@@ -182,6 +182,7 @@
     "packages.resetMonthly": "每月重置",
     "packages.periodicQuota": "{{period}}额度 ${{amount}}",
     "packages.subscriptionInfo": "📋 此套餐为周期订阅（{{period}}），有效期 {{days}} 天。每个周期获得 ${{amount}} 额度，未用完作废。",
+    "packages.officialEquiv": "相当于 {{model}} 官方 ${{amount}} 额度",
 
     "common.sessionExpired": "会话已过期，请重新登录",
     "common.requestFailed": "请求失败",

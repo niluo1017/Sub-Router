@@ -182,6 +182,7 @@
     "packages.resetMonthly": "Resets monthly",
     "packages.periodicQuota": "${{amount}} {{period}} quota",
     "packages.subscriptionInfo": "This is a subscription ({{period}}), valid for {{days}} days. Each period grants ${{amount}} quota. Unused quota expires.",
+    "packages.officialEquiv": "Equivalent to ${{amount}} at {{model}} official pricing",
 
     "common.sessionExpired": "Session expired, please log in again",
     "common.requestFailed": "Request failed",
