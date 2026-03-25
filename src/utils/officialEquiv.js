@@ -64,7 +64,8 @@ export function calcOfficialEquivList(models, quotaDollars) {
 
   return Object.entries(bestByLabel)
     .map(([label, equivDollars]) => ({ label, equivDollars: Math.round(equivDollars) }))
-    .sort((a, b) => b.equivDollars - a.equivDollars);
+    .sort((a, b) => b.equivDollars - a.equivDollars)
+    .slice(0, 3);
 }
 
 /**
