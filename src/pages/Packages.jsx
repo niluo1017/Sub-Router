@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getSitePackages, getSiteModels, subscribePackage, getActiveSubscriptions, Q } from '../api';
 import SpotlightCard from '../components/bits/SpotlightCard';
-import { calcOfficialEquiv } from '../utils/officialEquiv';
+import { calcOfficialEquivList } from '../utils/officialEquiv';
+import RotatingEquiv from '../components/bits/RotatingEquiv';
 import toast from 'react-hot-toast';
 
 const resetLabelKeys = {
@@ -166,7 +167,7 @@ export default function Packages() {
             const resetPeriod = pkg.quota_reset_period || 'never';
             const isSubscription = resetPeriod !== 'never';
             const quotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
-            const equiv = calcOfficialEquiv(enabledModels, quotaDollars);
+            const equivList = calcOfficialEquivList(enabledModels, quotaDollars);
 
             return (
             <div
@@ -203,13 +204,13 @@ export default function Packages() {
                 </div>
 
                 {/* Official Equiv Banner */}
-                {equiv && equiv.equivDollars > quotaDollars && (
+                {equivList.length > 0 && (
                   <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-3 mb-4">
                     <p className="text-xs text-page-warning font-medium">
-                      🔥 {t('packages.officialEquiv', {
-                        model: equiv.label,
-                        amount: Math.round(equiv.equivDollars),
-                      })}
+                      🔥 <RotatingEquiv
+                        items={equivList}
+                        text={(item) => t('packages.officialEquiv', { model: item.label, amount: item.equivDollars })}
+                      />
                     </p>
                   </div>
                 )}
