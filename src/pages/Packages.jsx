@@ -166,8 +166,19 @@ export default function Packages() {
           {enabled.map((pkg, i) => {
             const resetPeriod = pkg.quota_reset_period || 'never';
             const isSubscription = resetPeriod !== 'never';
-            const quotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
-            const equivList = calcOfficialEquivList(enabledModels, quotaDollars);
+            // For subscription packages, calculate TOTAL quota over the entire duration
+            // e.g. daily reset + 30 day duration = 30x single-period quota
+            const singleQuotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
+            let totalQuotaDollars = singleQuotaDollars;
+            if (isSubscription && pkg.duration > 0 && singleQuotaDollars > 0) {
+              let resetCount = 1;
+              if (resetPeriod === 'daily') resetCount = pkg.duration;
+              else if (resetPeriod === 'weekly') resetCount = Math.floor(pkg.duration / 7);
+              else if (resetPeriod === 'monthly') resetCount = Math.floor(pkg.duration / 30);
+              if (resetCount < 1) resetCount = 1;
+              totalQuotaDollars = singleQuotaDollars * resetCount;
+            }
+            const equivList = calcOfficialEquivList(enabledModels, totalQuotaDollars);
 
             return (
             <div

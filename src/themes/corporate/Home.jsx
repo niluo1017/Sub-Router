@@ -155,7 +155,14 @@ export default function CorporateHome() {
             <div className="grid md:grid-cols-3 gap-5 max-w-4xl">
               {packages.filter(p => p.enabled).slice(0, 3).map((pkg, i) => {
                 const quotaDollars = pkg.quota_amount > 0 ? pkg.quota_amount / Q : 0;
-                const equiv = calcOfficialEquivList(enabledModels, quotaDollars);
+                const rp = pkg.quota_reset_period || 'never';
+                let tqd = quotaDollars;
+                if (rp !== 'never' && pkg.duration > 0 && quotaDollars > 0) {
+                  let n = rp === 'daily' ? pkg.duration : rp === 'weekly' ? Math.floor(pkg.duration / 7) : rp === 'monthly' ? Math.floor(pkg.duration / 30) : 1;
+                  if (n < 1) n = 1;
+                  tqd = quotaDollars * n;
+                }
+                const equiv = calcOfficialEquivList(enabledModels, tqd);
                 return (
                 <div key={pkg.id} className={`rounded-xl p-6 flex flex-col border transition-all ${
                   i === 1 ? 'border-slate-900 shadow-sm' : 'border-slate-200 hover:border-slate-300'
