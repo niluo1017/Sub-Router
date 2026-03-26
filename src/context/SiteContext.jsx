@@ -41,3 +41,24 @@ export function useSite() {
   if (!ctx) throw new Error('useSite must be used within SiteProvider');
   return ctx;
 }
+
+/**
+ * useCurrency - 获取分站货币配置
+ * 返回 { symbol, rate, code, fmt(usdValue) }
+ * fmt() 将 USD 值转换为显示货币并格式化
+ */
+export function useCurrency() {
+  const { site } = useSite();
+  const currency = site?.currency;
+  const symbol = currency?.symbol || '¥';
+  const rate = currency?.exchange_rate || 7;
+  const code = currency?.code || 'CNY';
+
+  const fmt = (usdValue, decimals = 4) => {
+    if (usdValue == null || isNaN(usdValue)) return '-';
+    const converted = Number(usdValue) * rate;
+    return symbol + converted.toFixed(decimals);
+  };
+
+  return { symbol, rate, code, fmt };
+}

@@ -8,6 +8,7 @@ import {
   createCryptoOrder, getCryptoOrderStatus, getTopupHistory,
   Q, quotaToDollar,
 } from '../api';
+import { useCurrency } from '../context/SiteContext';
 import CountUp from '../components/bits/CountUp';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,7 @@ export default function Topup() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { site } = useSite();
+  const { symbol, rate } = useCurrency();
 
   const [usage, setUsage] = useState(null);
   const [topupInfo, setTopupInfo] = useState(null);
@@ -67,7 +69,7 @@ export default function Topup() {
   const quota = usage?.quota ?? user?.quota ?? 0;
   const usedQuota = usage?.used_quota ?? user?.used_quota ?? 0;
   const requestCount = usage?.request_count ?? user?.request_count ?? 0;
-  const balanceDollars = quota / Q;
+  const balanceDollars = quota / Q * rate;
 
   // Redeem
   const handleRedeem = async (e) => {
@@ -324,7 +326,7 @@ export default function Topup() {
         <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
-            $<CountUp from={0} to={balanceDollars} duration={1.5} />
+            {symbol}<CountUp from={0} to={balanceDollars} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
         </div>
@@ -332,7 +334,7 @@ export default function Topup() {
         <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
-            $<CountUp from={0} to={usedQuota / Q} duration={1.5} />
+            {symbol}<CountUp from={0} to={usedQuota / Q * rate} duration={1.5} />
           </div>
         </div>
 
@@ -371,7 +373,7 @@ export default function Topup() {
                       : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
-                  ${val}
+                  {symbol}{val}
                 </button>
               ))}
             </div>
@@ -591,7 +593,7 @@ export default function Topup() {
               {history.map((item, i) => (
                 <div key={i} className="flex items-center justify-between glass-sm rounded-xl px-4 py-3">
                   <div>
-                    <p className="text-sm text-page">${item.amount}</p>
+                    <p className="text-sm text-page">{symbol}{(Number(item.amount) * rate).toFixed(2)}</p>
                     <p className="text-xs text-page-muted">
                       {new Date(item.create_time * 1000).toLocaleString()} · {item.payment_method || t('topup.redeemCode')}
                     </p>

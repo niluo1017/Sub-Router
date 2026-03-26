@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getSitePackages, getSiteModels, subscribePackage, getActiveSubscriptions, Q } from '../api';
+import { useCurrency } from '../context/SiteContext';
 import SpotlightCard from '../components/bits/SpotlightCard';
 import { calcOfficialEquivList } from '../utils/officialEquiv';
 import RotatingEquiv from '../components/bits/RotatingEquiv';
@@ -24,6 +25,7 @@ export default function Packages() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { symbol, rate } = useCurrency();
   const [packages, setPackages] = useState([]);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +146,7 @@ export default function Packages() {
                         style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-xs text-page-secondary whitespace-nowrap">
-                      ${(remain / Q).toFixed(2)} / ${(total / Q).toFixed(2)}
+                      {symbol}{(remain / Q * rate).toFixed(2)} / {symbol}{(total / Q * rate).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -204,9 +206,9 @@ export default function Packages() {
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-page">${Number(pkg.price).toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-page">{symbol}{(Number(pkg.price) * rate).toFixed(2)}</span>
                     {pkg.original_price > 0 && pkg.original_price > pkg.price && (
-                      <span className="text-lg text-page-muted line-through">${Number(pkg.original_price).toFixed(2)}</span>
+                      <span className="text-lg text-page-muted line-through">{symbol}{(Number(pkg.original_price) * rate).toFixed(2)}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && (
@@ -277,7 +279,7 @@ export default function Packages() {
 
       {/* Confirmation Modal */}
       {confirmPkg && (() => {
-        const userBalance = (user?.quota || 0) / Q;
+        const userBalance = (user?.quota || 0) / Q * rate;
         const pkgPrice = Number(confirmPkg.price);
         const insufficient = userBalance < pkgPrice;
         const resetPeriod = confirmPkg.quota_reset_period || 'never';
@@ -301,7 +303,7 @@ export default function Packages() {
               </div>
             )}
             <p className="text-sm text-page-secondary mb-4">
-              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-page-danger' : 'text-page-success'}`}>${userBalance.toFixed(2)}</span>
+              {t('packages.yourBalance')} <span className={`font-medium ${insufficient ? 'text-page-danger' : 'text-page-success'}`}>{symbol}{userBalance.toFixed(2)}</span>
             </p>
             {insufficient && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { useSite } from '../../context/SiteContext';
+import { useSite, useCurrency } from '../../context/SiteContext';
 import { getSiteModels, getSitePackages, Q } from '../../api';
 import { calcOfficialEquivList } from '../../utils/officialEquiv';
 import RotatingEquiv from '../../components/bits/RotatingEquiv';
@@ -13,6 +13,7 @@ export default function CleanHome() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
+  const { symbol, rate } = useCurrency();
   const [models, setModels] = useState([]);
   const [packages, setPackages] = useState([]);
 
@@ -172,9 +173,9 @@ export default function CleanHome() {
                   <h3 className="text-base font-semibold text-gray-900">{pkg.name}</h3>
                   {pkg.description && <p className="text-sm text-gray-500 mt-1">{pkg.description}</p>}
                   <div className="mt-auto pt-6">
-                    <span className="text-3xl font-bold text-gray-900">${pkg.price}</span>
+                    <span className="text-3xl font-bold text-gray-900">{symbol}{(Number(pkg.price) * rate).toFixed(2)}</span>
                     {pkg.original_price > pkg.price && (
-                      <span className="text-sm text-gray-500 line-through ml-2">${pkg.original_price}</span>
+                      <span className="text-sm text-gray-500 line-through ml-2">{symbol}{(Number(pkg.original_price) * rate).toFixed(2)}</span>
                     )}
                     {pkg.duration > 0 && <p className="text-xs text-gray-500 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                   </div>

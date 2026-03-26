@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSiteModels } from '../api';
+import { useCurrency } from '../context/SiteContext';
 
 export default function Pricing() {
   const { t } = useTranslation();
+  const { symbol, rate } = useCurrency();
   const [models, setModels] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [search, setSearch] = useState('');
@@ -132,10 +134,10 @@ export default function Pricing() {
                     <span className="font-mono text-page">{m.display_name || m.model_name}</span>
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
-                    {m.input_price != null ? `$${(Number(m.input_price) * 1000).toFixed(4)}` : '-'}
+                    {m.input_price != null ? `${symbol}${(Number(m.input_price) * 1000 * rate).toFixed(4)}` : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
-                    {m.output_price != null ? `$${(Number(m.output_price) * 1000).toFixed(4)}` : '-'}
+                    {m.output_price != null ? `${symbol}${(Number(m.output_price) * 1000 * rate).toFixed(4)}` : '-'}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
