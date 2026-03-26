@@ -115,10 +115,10 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.pricing')}</p>
               <p className="text-xs text-page-muted">{t('dashboard.modelPrices')}</p>
             </Link>
-            <div className="glass-sm !rounded-xl px-4 py-3 opacity-50">
-              <p className="text-sm font-medium text-page">{t('dashboard.apiDocs')}</p>
-              <p className="text-xs text-page-muted">{t('dashboard.comingSoon')}</p>
-            </div>
+            <Link to="/logs" className="glass-sm !rounded-xl px-4 py-3 hover:bg-page-surface-hover transition-colors group">
+              <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.logs')}</p>
+              <p className="text-xs text-page-muted">{t('dashboard.viewLogs')}</p>
+            </Link>
           </div>
         </div>
       </div>

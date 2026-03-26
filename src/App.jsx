@@ -10,6 +10,7 @@ const Tokens = lazy(() => import('./pages/Tokens'));
 const Packages = lazy(() => import('./pages/Packages'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Topup = lazy(() => import('./pages/Topup'));
+const Logs = lazy(() => import('./pages/Logs'));
 
 const Loading = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -35,6 +36,7 @@ function ThemedRoutes() {
           <Route element={<AuthGuard />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tokens" element={<Tokens />} />
+            <Route path="/logs" element={<Logs />} />
             <Route path="/topup" element={<Topup />} />
           </Route>
         </Route>

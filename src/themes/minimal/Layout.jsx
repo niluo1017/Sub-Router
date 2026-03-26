@@ -21,6 +21,7 @@ export default function MinimalLayout() {
     { to: '/packages', label: t('nav.packages'), auth: false },
     { to: '/dashboard', label: t('nav.dashboard'), auth: true },
     { to: '/tokens', label: t('nav.apiKeys'), auth: true },
+    { to: '/logs', label: t('nav.logs'), auth: true },
     ...(site?.enable_topup ? [{ to: '/topup', label: t('nav.topup'), auth: true }] : []),
   ];
 

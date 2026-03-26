@@ -56,6 +56,7 @@ export const logout = () => api.post('/api/dist/user/logout');
 // ===== User =====
 export const getUserSelf = () => api.get('/api/dist/user/self');
 export const getUserUsage = () => api.get('/api/dist/user/usage');
+export const getUserLogs = (params) => api.get('/api/dist/user/logs', { params });
 
 // ===== Tokens =====
 export const getTokens = () => api.get('/api/dist/token/list');

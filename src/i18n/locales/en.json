@@ -227,6 +227,28 @@
     "topup.payWith": "Pay with",
     "topup.payNow": "Pay",
     "topup.quotaIncluded": "{{count}} quota included",
-    "topup.creemPayment": "Creem Payment"
+    "topup.creemPayment": "Creem Payment",
+
+    "nav.logs": "Logs",
+
+    "dashboard.logs": "Call Logs",
+    "dashboard.viewLogs": "View usage details",
+
+    "logs.title": "Call Logs",
+    "logs.subtitle": "View detailed records of every API call",
+    "logs.filterModel": "Filter by model...",
+    "logs.filterToken": "Filter by token...",
+    "logs.clearFilter": "Clear",
+    "logs.noLogs": "No call records yet",
+    "logs.time": "Time",
+    "logs.model": "Model",
+    "logs.token": "Token",
+    "logs.promptTokens": "Input",
+    "logs.completionTokens": "Output",
+    "logs.cost": "Cost",
+    "logs.duration": "Duration",
+    "logs.showing": "{{from}}-{{to}} of {{total}}",
+    "logs.prev": "Prev",
+    "logs.next": "Next"
   }
 }

@@ -227,6 +227,28 @@
     "topup.payWith": "使用",
     "topup.payNow": "支付",
     "topup.quotaIncluded": "含 {{count}} 额度",
-    "topup.creemPayment": "Creem 支付"
+    "topup.creemPayment": "Creem 支付",
+
+    "nav.logs": "调用日志",
+
+    "dashboard.logs": "调用日志",
+    "dashboard.viewLogs": "查看使用明细",
+
+    "logs.title": "调用日志",
+    "logs.subtitle": "查看每次 API 调用的详细记录",
+    "logs.filterModel": "按模型筛选...",
+    "logs.filterToken": "按令牌筛选...",
+    "logs.clearFilter": "清除",
+    "logs.noLogs": "暂无调用记录",
+    "logs.time": "时间",
+    "logs.model": "模型",
+    "logs.token": "令牌",
+    "logs.promptTokens": "输入",
+    "logs.completionTokens": "输出",
+    "logs.cost": "消费",
+    "logs.duration": "耗时",
+    "logs.showing": "第 {{from}}-{{to}} 条，共 {{total}} 条",
+    "logs.prev": "上一页",
+    "logs.next": "下一页"
   }
 }
