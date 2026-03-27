@@ -236,8 +236,8 @@ export default function Packages() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       {isSubscription
-                        ? t('packages.periodicQuota', { amount: (pkg.quota_amount / Q).toFixed(2), period: getResetLabel(resetPeriod) })
-                        : t('packages.creditIncluded', { amount: (pkg.quota_amount / Q).toFixed(2) })
+                        ? t('packages.periodicQuota', { amount: (pkg.quota_amount / Q * rate).toFixed(2), period: getResetLabel(resetPeriod) })
+                        : t('packages.creditIncluded', { amount: (pkg.quota_amount / Q * rate).toFixed(2) })
                       }
                     </li>
                   )}
@@ -297,7 +297,7 @@ export default function Packages() {
                   {t('packages.subscriptionInfo', {
                     period: getResetLabel(resetPeriod),
                     days: confirmPkg.duration || 30,
-                    amount: (confirmPkg.quota_amount / Q).toFixed(2),
+                    amount: (confirmPkg.quota_amount / Q * rate).toFixed(2),
                   })}
                 </p>
               </div>
