@@ -3,6 +3,23 @@ import { getSiteInfo } from '../api';
 
 const SiteContext = createContext(null);
 
+// Map theme template name → CSS class(es) to apply on <body>
+const themeClassMap = {
+  starter: '',
+  default: 'theme-default',
+  dark: 'theme-dark',
+  minimal: 'theme-minimal',
+  clean: 'theme-light',
+  corporate: 'theme-light',
+  claude: 'theme-light theme-claude',
+};
+
+function applyThemeClass(themeName) {
+  const cls = themeClassMap[themeName] || '';
+  document.body.className = cls + (cls ? ' ' : '') + 'antialiased';
+  try { localStorage.setItem('dist-theme-class', cls); } catch(e) {}
+}
+
 export function SiteProvider({ children }) {
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,6 +29,8 @@ export function SiteProvider({ children }) {
       .then((res) => {
         if (res.data.success) {
           setSite(res.data.data);
+          // Apply theme class to body immediately
+          applyThemeClass(res.data.data?.theme_template);
           // Update page title
           if (res.data.data?.name) {
             document.title = res.data.data.name;

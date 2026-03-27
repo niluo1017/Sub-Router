@@ -13,8 +13,9 @@ const Topup = lazy(() => import('./pages/Topup'));
 const Logs = lazy(() => import('./pages/Logs'));
 
 const Loading = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+  <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--page-bg)' }}>
+    <div className="w-8 h-8 rounded-full animate-spin"
+      style={{ border: '2px solid var(--page-spinner-track)', borderTopColor: 'var(--page-spinner)' }} />
   </div>
 );
 

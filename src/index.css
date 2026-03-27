@@ -5,6 +5,10 @@
 @layer base {
   :root {
     --brand: 99 102 241;
+    /* Page background */
+    --page-bg: #000000;
+    --page-spinner: rgba(255,255,255,0.7);
+    --page-spinner-track: rgba(255,255,255,0.2);
     /* Text colors */
     --page-text: 255 255 255;
     --page-text-secondary: 163 163 163;
@@ -32,7 +36,8 @@
   }
 
   body {
-    @apply bg-black text-white;
+    background: var(--page-bg);
+    color: rgb(var(--page-text));
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
@@ -56,6 +61,9 @@
 
   /* Light theme variable overrides */
   .theme-light {
+    --page-bg: #ffffff;
+    --page-spinner: rgba(99,102,241,0.8);
+    --page-spinner-track: rgba(99,102,241,0.2);
     --page-text: 17 24 39;
     --page-text-secondary: 107 114 128;
     --page-text-muted: 156 163 175;
@@ -80,6 +88,9 @@
   }
 
   .theme-claude {
+    --page-bg: #FAF6F1;
+    --page-spinner: rgba(217,119,87,0.8);
+    --page-spinner-track: rgba(217,119,87,0.2);
     --page-link: 217 119 87;
     --page-card-bg: rgba(255,255,255,0.7);
     --page-card-border: #E8DDD0;
@@ -88,6 +99,11 @@
     --page-divider: #E8DDD0;
     --page-inset: rgba(61,48,36,0.06);
   }
+
+  /* Per-dark-theme background overrides */
+  .theme-default { --page-bg: #09090b; }
+  .theme-dark { --page-bg: #030712; }
+  .theme-minimal { --page-bg: #0a0a0a; }
 }
 
 @layer components {

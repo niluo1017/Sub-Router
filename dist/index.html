@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,10 +7,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <title>AI Platform</title>
-    <script type="module" crossorigin src="/assets/index-B_drRjZu.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CMfnmeTI.css">
+    <script type="module" crossorigin src="/assets/index-ZavRXCeN.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DKPYwtVl.css">
   </head>
-  <body class="bg-black text-white antialiased">
+  <body class="antialiased">
+    <script>
+      // Restore theme class from cache to prevent flash on reload
+      try {
+        var tc = localStorage.getItem('dist-theme-class');
+        if (tc) document.body.className = tc + ' antialiased';
+      } catch(e) {}
+    </script>
     <div id="root"></div>
   </body>
 </html>

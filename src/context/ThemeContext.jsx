@@ -39,8 +39,9 @@ const themeRegistry = {
 // Prevents theme flash (rendering default theme before API returns the real one)
 function ThemeLoading() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-950">
-      <div className="w-8 h-8 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--page-bg)' }}>
+      <div className="w-8 h-8 rounded-full animate-spin"
+        style={{ border: '2px solid var(--page-spinner-track)', borderTopColor: 'var(--page-spinner)' }} />
     </div>
   );
 }
