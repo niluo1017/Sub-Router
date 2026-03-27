@@ -178,9 +178,9 @@ export default function StarterHome() {
                   <h3 className="text-base font-semibold text-white">{pkg.name}</h3>
                   {pkg.description && <p className="text-sm text-neutral-500 mt-1">{pkg.description}</p>}
                   <div className="mt-auto pt-6">
-                    <span className="text-3xl font-bold text-white">{symbol}{(Number(pkg.price) * rate).toFixed(2)}</span>
+                    <span className="text-3xl font-bold text-white">{symbol}{Number(pkg.price).toFixed(2)}</span>
                     {pkg.original_price > pkg.price && (
-                      <span className="text-sm text-neutral-600 line-through ml-2">{symbol}{(Number(pkg.original_price) * rate).toFixed(2)}</span>
+                      <span className="text-sm text-neutral-600 line-through ml-2">{symbol}{Number(pkg.original_price).toFixed(2)}</span>
                     )}
                     {pkg.duration > 0 && <p className="text-xs text-neutral-600 mt-1">{t('home.days', { count: pkg.duration })}</p>}
                   </div>

@@ -206,9 +206,9 @@ export default function Packages() {
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-page">{symbol}{(Number(pkg.price) * rate).toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-page">{symbol}{Number(pkg.price).toFixed(2)}</span>
                     {pkg.original_price > 0 && pkg.original_price > pkg.price && (
-                      <span className="text-lg text-page-muted line-through">{symbol}{(Number(pkg.original_price) * rate).toFixed(2)}</span>
+                      <span className="text-lg text-page-muted line-through">{symbol}{Number(pkg.original_price).toFixed(2)}</span>
                     )}
                   </div>
                   {pkg.duration > 0 && (
