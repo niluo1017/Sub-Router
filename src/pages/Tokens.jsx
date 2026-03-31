@@ -290,24 +290,17 @@ export default function Tokens() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-heading font-semibold text-page">{t('tokens.myKeys')}</h2>
-          {!hasGroups && (
-            <button onClick={openCreateDefault} className="btn-primary">
-              {t('tokens.newKey')}
-            </button>
-          )}
         </div>
 
         {tokens.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-page-surface flex items-center justify-center">
-              <svg className="w-8 h-8 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="glass rounded-2xl p-8 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-page-surface flex items-center justify-center">
+              <svg className="w-6 h-6 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
             </div>
-            <p className="text-page-secondary mb-4">{t('tokens.noKeys')}</p>
-            <button onClick={openCreateDefault} className="btn-primary">
-              {t('tokens.createFirst')}
-            </button>
+            <p className="text-sm text-page-secondary">{t('tokens.noKeys')}</p>
+            <p className="text-xs text-page-muted mt-1">{t('tokens.noKeysHint')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -387,7 +380,7 @@ function KeyGroupCard({ group, parseTags, onSelect, t }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-page">{group.name}</span>
             {group.is_recommended && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-500">
                 {t('tokens.recommended')}
               </span>
             )}
@@ -406,7 +399,7 @@ function KeyGroupCard({ group, parseTags, onSelect, t }) {
               </span>
             )}
             {group.discount_label && (
-              <span className="text-[11px] font-semibold text-green-600 dark:text-green-400">
+              <span className="text-[11px] font-semibold text-page-success">
                 {group.discount_label}
               </span>
             )}

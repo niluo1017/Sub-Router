@@ -112,6 +112,7 @@
     "tokens.deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
     "tokens.delete": "Delete",
     "tokens.noKeys": "No API keys yet",
+    "tokens.noKeysHint": "Click a card above to create one",
     "tokens.createFirst": "Create Your First Key",
     "tokens.enabled": "Enabled",
     "tokens.disabled": "Disabled",
@@ -145,6 +146,8 @@
     "config.loading": "Loading...",
     "config.loginPrompt": "Log in to generate your config",
     "config.loginDesc": "Select your API Key and model to auto-fill config files",
+    "config.noKeyPrompt": "Create an API Key first",
+    "config.noKeyDesc": "Config files will be generated once you have a key",
     "config.searchModel": "Search models...",
     "config.noModelMatch": "No models match your search",
 

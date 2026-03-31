@@ -112,6 +112,7 @@
     "tokens.deleteConfirm": "删除 \"{{name}}\"？此操作不可撤销。",
     "tokens.delete": "删除",
     "tokens.noKeys": "暂无 API 密钥",
+    "tokens.noKeysHint": "点击上方卡片即可快速创建",
     "tokens.createFirst": "创建您的第一个密钥",
     "tokens.enabled": "已启用",
     "tokens.disabled": "已禁用",
@@ -145,6 +146,8 @@
     "config.loading": "加载中...",
     "config.loginPrompt": "登录后可生成您的专属配置",
     "config.loginDesc": "选择 API Key 和模型，自动填充到配置文件中",
+    "config.noKeyPrompt": "请先创建 API Key",
+    "config.noKeyDesc": "创建密钥后即可自动生成配置文件",
     "config.searchModel": "搜索模型...",
     "config.noModelMatch": "没有匹配的模型",
 
