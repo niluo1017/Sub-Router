@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getTokens, createToken, updateToken, deleteToken } from '../api';
+import { getTokens, createToken, updateToken, deleteToken, getSiteKeyGroups } from '../api';
 import ConfigExporter from '../components/ConfigExporter';
 import toast from 'react-hot-toast';
 
@@ -8,24 +8,57 @@ export default function Tokens() {
   const { t } = useTranslation();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [createName, setCreateName] = useState('');
-  const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
-  // Newly created key — shown only once
   const [newKey, setNewKey] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Key groups
+  const [keyGroups, setKeyGroups] = useState([]);
+
+  // Create modal
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [selectedGroupId, setSelectedGroupId] = useState(0);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getTokens();
-      if (res.data.success) setTokens(res.data.data || []);
+      const [tokensRes, groupsRes] = await Promise.all([
+        getTokens(),
+        getSiteKeyGroups().catch(() => ({ data: { success: false } })),
+      ]);
+      if (tokensRes.data.success) setTokens(tokensRes.data.data || []);
+      if (groupsRes.data.success) setKeyGroups(groupsRes.data.data || []);
     } catch (e) { /* interceptor */ }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Group by vendor_category
+  const groupedByVendor = useMemo(() => {
+    const map = {};
+    keyGroups.forEach((g) => {
+      const cat = g.vendor_category || t('tokens.otherGroups');
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(g);
+    });
+    return map;
+  }, [keyGroups, t]);
+
+  const openCreateFromGroup = (group) => {
+    if (group.is_unavailable) return;
+    setSelectedGroupId(group.id);
+    setCreateName(group.name);
+    setShowCreate(true);
+  };
+
+  const openCreateDefault = () => {
+    setSelectedGroupId(0);
+    setCreateName('');
+    setShowCreate(true);
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -35,15 +68,15 @@ export default function Tokens() {
     }
     setCreating(true);
     try {
-      const res = await createToken({ name: createName.trim() });
+      const payload = { name: createName.trim() };
+      if (selectedGroupId > 0) payload.key_group_id = selectedGroupId;
+      const res = await createToken(payload);
       if (res.data.success) {
         setCreateName('');
         setShowCreate(false);
-        // Show the key — it's only visible at creation time!
+        setSelectedGroupId(0);
         const createdKey = res.data.data?.key;
-        if (createdKey) {
-          setNewKey(createdKey);
-        }
+        if (createdKey) setNewKey(createdKey);
         await load();
       }
     } catch (e) { /* interceptor */ }
@@ -92,6 +125,10 @@ export default function Tokens() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const parseTags = (tagsStr) => {
+    try { return JSON.parse(tagsStr || '[]'); } catch { return []; }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -100,23 +137,81 @@ export default function Tokens() {
     );
   }
 
+  const hasGroups = keyGroups.length > 0;
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-page">{t('tokens.title')}</h1>
-          <p className="text-sm text-page-secondary mt-1">{t('tokens.subtitle')}</p>
+
+      {/* ========== Section 1: Create Key with Groups ========== */}
+      <div className="mb-10">
+        <h1 className="text-2xl font-heading font-bold text-page">
+          {hasGroups ? t('tokens.selectGroup') : t('tokens.title')}
+        </h1>
+        {hasGroups && (
+          <p className="text-sm text-page-secondary mt-1">{t('tokens.selectGroupSubtitle')}</p>
+        )}
+
+        {/* Default (All Providers) Card */}
+        <div className="mt-6">
+          <button
+            onClick={openCreateDefault}
+            className="w-full glass rounded-xl p-4 flex items-center gap-4 hover:border-brand-500/50 border border-page-divider transition-all group text-left"
+          >
+            <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-page">{hasGroups ? t('tokens.defaultGroup') : t('tokens.newKey')}</p>
+              {hasGroups && (
+                <p className="text-xs text-page-secondary mt-0.5">{t('tokens.defaultGroupDesc')}</p>
+              )}
+            </div>
+            <span className="text-xs font-medium text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              {t('tokens.create')} →
+            </span>
+          </button>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary">
-          {t('tokens.newKey')}
-        </button>
+
+        {/* Vendor Category Sections */}
+        {hasGroups && Object.entries(groupedByVendor).map(([vendor, groups]) => (
+          <div key={vendor} className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-base font-semibold text-page">{vendor}</h2>
+              <span className="text-[11px] text-page-muted bg-page-surface px-2 py-0.5 rounded-full">
+                {groups.length} {t('tokens.groupCount')}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {groups.map((group) => (
+                <KeyGroupCard
+                  key={group.id}
+                  group={group}
+                  parseTags={parseTags}
+                  onSelect={openCreateFromGroup}
+                  t={t}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Create Modal */}
+      {/* ========== Create Modal ========== */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }}>
           <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-page mb-4">{t('tokens.createApiKey')}</h2>
+            {selectedGroupId > 0 && (() => {
+              const g = keyGroups.find((x) => x.id === selectedGroupId);
+              return g ? (
+                <div className="mb-4 p-3 rounded-lg bg-page-surface border border-page-divider">
+                  <p className="text-xs text-page-muted">{t('tokens.selectedGroup')}</p>
+                  <p className="text-sm font-medium text-page">{g.name}</p>
+                </div>
+              ) : null;
+            })()}
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.name')}</label>
@@ -131,7 +226,7 @@ export default function Tokens() {
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }} className="btn-secondary">
                   {t('tokens.cancel')}
                 </button>
                 <button type="submit" disabled={creating} className="btn-primary">
@@ -143,7 +238,7 @@ export default function Tokens() {
         </div>
       )}
 
-      {/* New Key Reveal Modal — shown only once after creation */}
+      {/* ========== New Key Reveal Modal ========== */}
       {newKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass rounded-2xl p-6 w-full max-w-lg">
@@ -173,7 +268,7 @@ export default function Tokens() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* ========== Delete Confirmation Modal ========== */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -191,80 +286,152 @@ export default function Tokens() {
         </div>
       )}
 
-      {/* Token List */}
-      {tokens.length === 0 ? (
-        <div className="glass rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-page-surface flex items-center justify-center">
-            <svg className="w-8 h-8 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-            </svg>
-          </div>
-          <p className="text-page-secondary mb-4">{t('tokens.noKeys')}</p>
-          <button onClick={() => setShowCreate(true)} className="btn-primary">
-            {t('tokens.createFirst')}
-          </button>
+      {/* ========== Section 2: My API Keys ========== */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-heading font-semibold text-page">{t('tokens.myKeys')}</h2>
+          {!hasGroups && (
+            <button onClick={openCreateDefault} className="btn-primary">
+              {t('tokens.newKey')}
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {tokens.map((token) => (
-            <div key={token.id} className="glass-sm rounded-xl p-5">
-              <div className="flex items-center gap-4">
-                {/* Status dot */}
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-page">{token.name}</p>
-                </div>
-
-                {/* Created time */}
-                <span className="text-xs text-page-muted hidden md:block">
-                  {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
-                </span>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleToggle(token)}
-                    className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
-                      token.status === 1
-                        ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
-                        : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
-                    }`}
-                  >
-                    {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(token)}
-                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
-                  >
-                    {t('tokens.delete')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Key row — always visible with copy button */}
-              {token.key && (
-                <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
-                  <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
-                    sk-{token.key}
-                  </code>
-                  <button
-                    onClick={() => handleCopy('sk-' + token.key)}
-                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
-                  >
-                    {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
-                  </button>
-                </div>
-              )}
+        {tokens.length === 0 ? (
+          <div className="glass rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-page-surface flex items-center justify-center">
+              <svg className="w-8 h-8 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-page-secondary mb-4">{t('tokens.noKeys')}</p>
+            <button onClick={openCreateDefault} className="btn-primary">
+              {t('tokens.createFirst')}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {tokens.map((token) => (
+              <div key={token.id} className="glass-sm rounded-xl p-5">
+                <div className="flex items-center gap-4">
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-page">{token.name}</p>
+                  </div>
+                  <span className="text-xs text-page-muted hidden md:block">
+                    {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggle(token)}
+                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                        token.status === 1
+                          ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
+                          : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
+                      }`}
+                    >
+                      {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(token)}
+                      className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
+                    >
+                      {t('tokens.delete')}
+                    </button>
+                  </div>
+                </div>
+                {token.key && (
+                  <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
+                    <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
+                      sk-{token.key}
+                    </code>
+                    <button
+                      onClick={() => handleCopy('sk-' + token.key)}
+                      className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
+                    >
+                      {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Config File Generator */}
       <div className="mt-8">
         <ConfigExporter />
+      </div>
+    </div>
+  );
+}
+
+/* ========== Key Group Card ========== */
+function KeyGroupCard({ group, parseTags, onSelect, t }) {
+  const tags = parseTags(group.tags);
+  const isUnavailable = group.is_unavailable;
+
+  return (
+    <div
+      className={`glass-sm rounded-xl p-4 border border-page-divider transition-all ${
+        isUnavailable
+          ? 'opacity-50 cursor-not-allowed'
+          : 'hover:border-brand-500/40 cursor-pointer group'
+      }`}
+      onClick={() => !isUnavailable && onSelect(group)}
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Name + badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-sm text-page">{group.name}</span>
+            {group.is_recommended && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                {t('tokens.recommended')}
+              </span>
+            )}
+            {isUnavailable && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-500/10 text-red-500">
+                {t('tokens.unavailable')}
+              </span>
+            )}
+          </div>
+
+          {/* Price + discount + tags */}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {group.rmb_per_usd > 0 && (
+              <span className="text-xs font-medium text-page">
+                {group.rmb_per_usd} {t('tokens.rmbPerUsd')}
+              </span>
+            )}
+            {group.discount_label && (
+              <span className="text-[11px] font-semibold text-green-600 dark:text-green-400">
+                {group.discount_label}
+              </span>
+            )}
+            {tags.map((tag, i) => (
+              <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-page-surface text-page-secondary">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Description */}
+          {group.description && (
+            <p className="text-xs text-page-muted mt-1">{group.description}</p>
+          )}
+        </div>
+
+        {/* Create arrow */}
+        {!isUnavailable && (
+          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="text-xs font-medium text-brand-500">{t('tokens.create')}</span>
+            <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );

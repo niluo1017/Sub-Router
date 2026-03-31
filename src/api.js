@@ -47,6 +47,7 @@ export const getSiteInfo = () => api.get('/api/dist/site/info');
 export const getSiteModels = () => api.get('/api/dist/site/models');
 export const getSitePricing = () => api.get('/api/dist/site/pricing');
 export const getSitePackages = () => api.get('/api/dist/site/packages');
+export const getSiteKeyGroups = () => api.get('/api/dist/site/key-groups');
 
 // ===== Auth =====
 export const register = (data) => api.post('/api/dist/user/register', data);
