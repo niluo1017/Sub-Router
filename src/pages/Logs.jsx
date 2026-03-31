@@ -115,7 +115,7 @@ export default function Logs() {
                         {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
                       </td>
                       <td className="px-4 py-3 text-right text-xs text-page-secondary">
-                        {log.use_time > 0 ? `${(log.use_time / 1000).toFixed(1)}s` : '-'}
+                        {log.use_time > 0 ? `${log.use_time}s` : '-'}
                       </td>
                     </tr>
                   ))}
