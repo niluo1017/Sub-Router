@@ -263,6 +263,14 @@
     "logs.duration": "Duration",
     "logs.showing": "{{from}}-{{to}} of {{total}}",
     "logs.prev": "Prev",
-    "logs.next": "Next"
+    "logs.next": "Next",
+    "缓存命中 Tokens": "Cache Hit Tokens",
+    "缓存创建 Tokens": "Cache Creation Tokens",
+    "流式": "Streaming",
+    "是": "Yes",
+    "否": "No",
+    "首字时间": "First Token Time",
+    "计费方式": "Billing Method",
+    "订阅抵扣": "Subscription Deduction"
   }
 }

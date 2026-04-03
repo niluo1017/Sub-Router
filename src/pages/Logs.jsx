@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getUserLogs, Q } from '../api';
 import { useCurrency } from '../context/SiteContext';
 
@@ -8,6 +9,15 @@ function formatTime(unix) {
   const d = new Date(unix * 1000);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function getLogOther(otherStr) {
+  if (!otherStr) return null;
+  try {
+    return JSON.parse(otherStr);
+  } catch (e) {
+    return null;
+  }
 }
 
 export default function Logs() {
@@ -19,6 +29,7 @@ export default function Logs() {
   const [loading, setLoading] = useState(true);
   const [modelFilter, setModelFilter] = useState('');
   const [tokenFilter, setTokenFilter] = useState('');
+  const [expandedRows, setExpandedRows] = useState({});
   const pageSize = 20;
 
   const load = useCallback(async () => {
@@ -39,6 +50,50 @@ export default function Logs() {
   useEffect(() => { load(); }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const toggleRow = (logId) => {
+    setExpandedRows(prev => ({ ...prev, [logId]: !prev[logId] }));
+  };
+
+  const getExpandData = (log) => {
+    const other = getLogOther(log.other);
+    if (!other) return [];
+
+    const data = [];
+
+    // Cache hits
+    if (other.cache_tokens > 0) {
+      data.push({ key: t('缓存命中 Tokens'), value: other.cache_tokens.toLocaleString() });
+    }
+
+    // Cache creation
+    if (other.cache_creation_tokens > 0) {
+      data.push({ key: t('缓存创建 Tokens'), value: other.cache_creation_tokens.toLocaleString() });
+    }
+
+    // Request ID
+    if (log.request_id) {
+      data.push({ key: 'Request ID', value: log.request_id });
+    }
+
+    // Stream info
+    if (log.is_stream !== undefined) {
+      data.push({ key: t('流式'), value: log.is_stream ? t('是') : t('否') });
+    }
+
+    // First response time for streaming
+    if (log.is_stream && other.frt) {
+      const frtSeconds = (parseFloat(other.frt) / 1000.0).toFixed(1);
+      data.push({ key: t('首字时间'), value: `${frtSeconds}s` });
+    }
+
+    // Billing source
+    if (other.billing_source === 'subscription') {
+      data.push({ key: t('计费方式'), value: t('订阅抵扣') });
+    }
+
+    return data;
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -92,6 +147,7 @@ export default function Logs() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-page-divider">
+                    <th className="w-8"></th>
                     <th className="text-left px-4 py-3 font-medium text-page-secondary">{t('logs.time')}</th>
                     <th className="text-left px-4 py-3 font-medium text-page-secondary">{t('logs.model')}</th>
                     <th className="text-left px-4 py-3 font-medium text-page-secondary">{t('logs.token')}</th>
@@ -102,46 +158,98 @@ export default function Logs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log, i) => (
-                    <tr key={i} className="border-b border-page-divider last:border-0 hover:bg-page-surface transition-colors">
-                      <td className="px-4 py-3 text-page-secondary text-xs whitespace-nowrap">{formatTime(log.created_at)}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-page">{log.model_name || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-page-secondary">{log.token_name || '-'}</td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.prompt_tokens?.toLocaleString() || '0'}</td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.completion_tokens?.toLocaleString() || '0'}</td>
-                      <td className="px-4 py-3 text-right font-mono text-xs text-page-warning">
-                        {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs text-page-secondary">
-                        {log.use_time > 0 ? `${log.use_time}s` : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {logs.map((log, i) => {
+                    const expandData = getExpandData(log);
+                    const hasExpandData = expandData.length > 0;
+                    const isExpanded = expandedRows[log.id];
+                    return (
+                      <React.Fragment key={i}>
+                        <tr
+                          className={`border-b border-page-divider last:border-0 hover:bg-page-surface transition-colors ${hasExpandData ? 'cursor-pointer' : ''}`}
+                          onClick={() => hasExpandData && toggleRow(log.id)}
+                        >
+                          <td className="px-2 py-3 text-page-secondary">
+                            {hasExpandData && (
+                              isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-page-secondary text-xs whitespace-nowrap">{formatTime(log.created_at)}</td>
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs text-page">{log.model_name || '-'}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-page-secondary">{log.token_name || '-'}</td>
+                          <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.prompt_tokens?.toLocaleString() || '0'}</td>
+                          <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.completion_tokens?.toLocaleString() || '0'}</td>
+                          <td className="px-4 py-3 text-right font-mono text-xs text-page-warning">
+                            {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-page-secondary">
+                            {log.use_time > 0 ? `${log.use_time}s` : '-'}
+                          </td>
+                        </tr>
+                        {isExpanded && hasExpandData && (
+                          <tr className="border-b border-page-divider last:border-0 bg-page-surface/50">
+                            <td colSpan="8" className="px-4 py-3">
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                                {expandData.map((item, idx) => (
+                                  <div key={idx} className="flex flex-col">
+                                    <span className="text-page-secondary text-xs">{item.key}</span>
+                                    <span className="font-medium text-page">{item.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-page-divider">
-              {logs.map((log, i) => (
-                <div key={i} className="px-4 py-3 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-page font-medium">{log.model_name || '-'}</span>
-                    <span className="font-mono text-xs text-page-warning">
-                      {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
-                    </span>
+              {logs.map((log, i) => {
+                const expandData = getExpandData(log);
+                const hasExpandData = expandData.length > 0;
+                const isExpanded = expandedRows[log.id];
+                return (
+                  <div key={i} className="px-4 py-3 space-y-1.5">
+                    <div
+                      className={`flex items-center justify-between ${hasExpandData ? 'cursor-pointer' : ''}`}
+                      onClick={() => hasExpandData && toggleRow(log.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {hasExpandData && (
+                          isExpanded ? <ChevronDown className="w-4 h-4 text-page-secondary" /> : <ChevronRight className="w-4 h-4 text-page-secondary" />
+                        )}
+                        <span className="font-mono text-xs text-page font-medium">{log.model_name || '-'}</span>
+                      </div>
+                      <span className="font-mono text-xs text-page-warning">
+                        {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-page-secondary">
+                      <span>{formatTime(log.created_at)}</span>
+                      <span>{log.prompt_tokens || 0} / {log.completion_tokens || 0} tokens</span>
+                    </div>
+                    {log.token_name && (
+                      <div className="text-[11px] text-page-muted">{log.token_name}</div>
+                    )}
+                    {isExpanded && hasExpandData && (
+                      <div className="mt-3 pt-3 border-t border-page-divider/50 grid grid-cols-2 gap-x-4 gap-y-2">
+                        {expandData.map((item, idx) => (
+                          <div key={idx} className="flex flex-col">
+                            <span className="text-page-secondary text-[10px]">{item.key}</span>
+                            <span className="font-medium text-page text-xs">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-page-secondary">
-                    <span>{formatTime(log.created_at)}</span>
-                    <span>{log.prompt_tokens || 0} / {log.completion_tokens || 0} tokens</span>
-                  </div>
-                  {log.token_name && (
-                    <div className="text-[11px] text-page-muted">{log.token_name}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

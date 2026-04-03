@@ -263,6 +263,14 @@
     "logs.duration": "耗时",
     "logs.showing": "第 {{from}}-{{to}} 条，共 {{total}} 条",
     "logs.prev": "上一页",
-    "logs.next": "下一页"
+    "logs.next": "下一页",
+    "缓存命中 Tokens": "缓存命中 Tokens",
+    "缓存创建 Tokens": "缓存创建 Tokens",
+    "流式": "流式",
+    "是": "是",
+    "否": "否",
+    "首字时间": "首字时间",
+    "计费方式": "计费方式",
+    "订阅抵扣": "订阅抵扣"
   }
 }
