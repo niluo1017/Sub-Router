@@ -243,6 +243,24 @@
     "topup.quotaIncluded": "含 {{count}} 额度",
     "topup.creemPayment": "Creem 支付",
 
+    "topup.inviteTitle": "邀请返佣",
+    "topup.inviteSubtitle": "邀请好友注册，持续获得消费佣金",
+    "topup.affAvailable": "可用佣金",
+    "topup.affTotal": "累计佣金",
+    "topup.affCount": "邀请人数",
+    "topup.inviteLink": "邀请链接",
+    "topup.copy": "复制",
+    "topup.copied": "已复制",
+    "topup.viewEarnings": "查看收入明细",
+    "topup.hideEarnings": "收起明细",
+    "topup.noEarnings": "暂无收入记录",
+    "topup.transferToBalance": "划转到余额",
+    "topup.transferPlaceholder": "输入划转额度 (quota)",
+    "topup.transfer": "划转",
+    "topup.transferSuccess": "划转成功",
+
+    "dashboard.topupDesc": "充值账户余额",
+
     "nav.logs": "调用日志",
 
     "dashboard.logs": "调用日志",

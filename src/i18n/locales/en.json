@@ -243,6 +243,24 @@
     "topup.quotaIncluded": "{{count}} quota included",
     "topup.creemPayment": "Creem Payment",
 
+    "topup.inviteTitle": "Referral Program",
+    "topup.inviteSubtitle": "Invite friends and earn ongoing commissions",
+    "topup.affAvailable": "Available Commission",
+    "topup.affTotal": "Total Commission",
+    "topup.affCount": "Invited Users",
+    "topup.inviteLink": "Invitation Link",
+    "topup.copy": "Copy",
+    "topup.copied": "Copied",
+    "topup.viewEarnings": "View Earnings",
+    "topup.hideEarnings": "Hide Earnings",
+    "topup.noEarnings": "No earnings yet",
+    "topup.transferToBalance": "Transfer to Balance",
+    "topup.transferPlaceholder": "Enter transfer amount (quota)",
+    "topup.transfer": "Transfer",
+    "topup.transferSuccess": "Transfer successful",
+
+    "dashboard.topupDesc": "Recharge account balance",
+
     "nav.logs": "Logs",
 
     "dashboard.logs": "Call Logs",
