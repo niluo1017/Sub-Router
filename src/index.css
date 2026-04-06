@@ -121,6 +121,12 @@
     @apply rounded-xl;
   }
 
+  /* Modal overlay — opaque card background so content is readable */
+  .modal-overlay .glass,
+  .modal-overlay .glass-sm {
+    background: rgba(20, 20, 28, 0.95);
+  }
+
   .btn-primary {
     @apply px-6 py-2.5 rounded-xl bg-brand-600 font-medium text-sm
            hover:bg-brand-500 active:bg-brand-700
@@ -183,6 +189,16 @@
 .theme-light .glass,
 .theme-light .glass-sm {
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.theme-light .modal-overlay .glass,
+.theme-light .modal-overlay .glass-sm {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.theme-claude .modal-overlay .glass,
+.theme-claude .modal-overlay .glass-sm {
+  background: rgba(250, 246, 241, 0.97);
 }
 
 /* Light theme input focus */

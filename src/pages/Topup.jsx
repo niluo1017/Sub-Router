@@ -603,7 +603,7 @@ export default function Topup() {
 
       {/* Crypto Payment Modal */}
       {cryptoOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCryptoOrder(null)}>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCryptoOrder(null)}>
           <div className="glass rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-page mb-4">{t('topup.cryptoPayment')}</h3>
             <div className="space-y-4">

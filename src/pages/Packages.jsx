@@ -285,7 +285,7 @@ export default function Packages() {
         const resetPeriod = confirmPkg.quota_reset_period || 'never';
         const isSubscription = resetPeriod !== 'never';
         return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => !subscribing && setConfirmPkg(null)}>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => !subscribing && setConfirmPkg(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-page mb-3">{t('packages.confirmTitle')}</h2>
             <p className="text-sm text-page-secondary mb-2">
