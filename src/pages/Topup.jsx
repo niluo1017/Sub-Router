@@ -6,6 +6,7 @@ import {
   getUserUsage, redeemCode, getTopupInfo, calculateAmount,
   createEpayOrder, createStripeOrder, createCreemOrder,
   createCryptoOrder, getCryptoOrderStatus, getTopupHistory,
+  getAffCode, transferAffQuota, getAffEarnings,
   Q, quotaToDollar,
 } from '../api';
 import { useCurrency } from '../context/SiteContext';
@@ -48,18 +49,30 @@ export default function Topup() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Invitation / Aff
+  const [affLink, setAffLink] = useState('');
+  const [affEarnings, setAffEarnings] = useState([]);
+  const [showAffEarnings, setShowAffEarnings] = useState(false);
+  const [affEarningsLoading, setAffEarningsLoading] = useState(false);
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
   const enableTopup = site?.enable_topup && topupInfo;
   const topupConfig = site?.topup_config;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usageRes, topupRes] = await Promise.all([
+      const [usageRes, topupRes, affRes] = await Promise.all([
         getUserUsage(),
         site?.enable_topup ? getTopupInfo().catch(() => null) : Promise.resolve(null),
+        getAffCode().catch(() => null),
       ]);
       if (usageRes.data.success) setUsage(usageRes.data.data);
       if (topupRes?.data?.data) setTopupInfo(topupRes.data.data);
+      if (affRes?.data?.success && affRes.data.data) {
+        setAffLink(`${window.location.origin}/register?aff=${affRes.data.data}`);
+      }
     } catch (e) { /* interceptor */ }
     setLoading(false);
   }, [site?.enable_topup]);
@@ -291,6 +304,45 @@ export default function Topup() {
     setHistoryLoading(false);
   };
 
+  // Aff earnings
+  const loadAffEarnings = async () => {
+    setAffEarningsLoading(true);
+    try {
+      const res = await getAffEarnings({ page: 1, page_size: 20 });
+      if (res.data.success && res.data.data) {
+        setAffEarnings(res.data.data);
+      }
+    } catch (e) { /* interceptor */ }
+    setAffEarningsLoading(false);
+  };
+
+  const handleCopyAffLink = () => {
+    if (!affLink) return;
+    navigator.clipboard.writeText(affLink).then(() => {
+      toast.success(t('topup.copied') || 'Copied!');
+    }).catch(() => {
+      toast.error('Copy failed');
+    });
+  };
+
+  const handleTransfer = async () => {
+    const val = parseInt(transferAmount);
+    if (!val || val <= 0) {
+      toast.error(t('topup.enterAmount'));
+      return;
+    }
+    setTransferring(true);
+    try {
+      const res = await transferAffQuota({ quota: val });
+      if (res.data.success) {
+        toast.success(res.data.message || t('topup.transferSuccess') || 'Transfer successful');
+        setTransferAmount('');
+        await Promise.all([loadData(), refreshUser()]);
+      }
+    } catch (e) { /* interceptor */ }
+    setTransferring(false);
+  };
+
   const presetAmounts = topupInfo?.amount_options || [1, 5, 10, 20, 50, 100];
   const minTopup = topupInfo?.min_topup || 1;
   const payMethods = topupInfo?.pay_methods || [];
@@ -373,7 +425,7 @@ export default function Topup() {
                       : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
-                  {symbol}{val}
+                  {symbol}{Math.round(val * rate)}
                 </button>
               ))}
             </div>
@@ -385,14 +437,20 @@ export default function Topup() {
             <div className="flex gap-3">
               <input
                 type="number"
-                value={amount}
+                value={amount ? Math.round(amount * rate) : ''}
                 onChange={(e) => {
-                  setAmount(e.target.value);
+                  const cnyVal = e.target.value;
+                  const usdVal = cnyVal ? Math.max(1, Math.ceil(cnyVal / rate)) : '';
+                  setAmount(usdVal);
                   setSelectedPreset(null);
                 }}
-                onBlur={(e) => calcAmount(e.target.value)}
-                min={minTopup}
-                placeholder={t('topup.amountPlaceholder', { min: minTopup })}
+                onBlur={(e) => {
+                  const cnyVal = e.target.value;
+                  const usdVal = cnyVal ? Math.max(1, Math.ceil(cnyVal / rate)) : '';
+                  calcAmount(usdVal);
+                }}
+                min={Math.round(minTopup * rate)}
+                placeholder={t('topup.amountPlaceholder', { min: Math.round(minTopup * rate) })}
                 className="input flex-1"
               />
             </div>
@@ -478,13 +536,15 @@ export default function Topup() {
             <label className="block text-sm font-medium text-page-label mb-2">{t('topup.amount')}</label>
             <input
               type="number"
-              value={amount}
+              value={amount ? Math.round(amount * rate) : ''}
               onChange={(e) => {
-                setAmount(e.target.value);
+                const cnyVal = e.target.value;
+                const usdVal = cnyVal ? Math.max(1, Math.ceil(cnyVal / rate)) : '';
+                setAmount(usdVal);
                 setSelectedPreset(null);
               }}
-              min={minTopup}
-              placeholder={t('topup.amountPlaceholder', { min: minTopup })}
+              min={Math.round(minTopup * rate)}
+              placeholder={t('topup.amountPlaceholder', { min: Math.round(minTopup * rate) })}
               className="input w-full"
             />
           </div>
@@ -630,6 +690,114 @@ export default function Topup() {
           </button>
         </form>
       </div>
+
+      {/* Invitation / Affiliate */}
+      {affLink && (
+        <div className="glass rounded-2xl p-6 mt-6">
+          <h2 className="text-lg font-semibold text-page mb-1">{t('topup.inviteTitle') || '邀请返佣'}</h2>
+          <p className="text-sm text-page-secondary mb-5">{t('topup.inviteSubtitle') || '邀请好友注册，持续获得消费佣金'}</p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="glass-sm rounded-xl p-4 text-center">
+              <p className="text-xs text-page-secondary mb-1">{t('topup.affAvailable') || '可用佣金'}</p>
+              <p className="text-xl font-bold text-page">
+                {symbol}{((user?.aff_quota || 0) / Q * rate).toFixed(2)}
+              </p>
+            </div>
+            <div className="glass-sm rounded-xl p-4 text-center">
+              <p className="text-xs text-page-secondary mb-1">{t('topup.affTotal') || '累计佣金'}</p>
+              <p className="text-xl font-bold text-page">
+                {symbol}{((user?.aff_history_quota || 0) / Q * rate).toFixed(2)}
+              </p>
+            </div>
+            <div className="glass-sm rounded-xl p-4 text-center">
+              <p className="text-xs text-page-secondary mb-1">{t('topup.affCount') || '邀请人数'}</p>
+              <p className="text-xl font-bold text-page">{user?.aff_count || 0}</p>
+            </div>
+          </div>
+
+          {/* Invitation Link */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-page-label mb-2">{t('topup.inviteLink') || '邀请链接'}</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={affLink}
+                className="input flex-1 text-sm"
+              />
+              <button
+                onClick={handleCopyAffLink}
+                className="btn-primary whitespace-nowrap text-sm px-4"
+              >
+                {t('topup.copy') || '复制'}
+              </button>
+            </div>
+          </div>
+
+          {/* Transfer to balance */}
+          {(user?.aff_quota || 0) > 0 && (
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-page-label mb-2">{t('topup.transferToBalance') || '划转到余额'}</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                  placeholder={t('topup.transferPlaceholder') || '输入划转额度 (quota)'}
+                  className="input flex-1 text-sm"
+                  min={1}
+                />
+                <button
+                  onClick={handleTransfer}
+                  disabled={transferring}
+                  className="btn-primary whitespace-nowrap text-sm px-4"
+                >
+                  {transferring ? (t('topup.processing') || '处理中...') : (t('topup.transfer') || '划转')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Earnings Details */}
+          <div>
+            <button
+              onClick={() => { setShowAffEarnings(!showAffEarnings); if (!showAffEarnings) loadAffEarnings(); }}
+              className="text-sm text-page-secondary hover:text-page transition-colors"
+            >
+              {showAffEarnings ? (t('topup.hideEarnings') || '收起明细') : (t('topup.viewEarnings') || '查看收入明细')}
+            </button>
+            {showAffEarnings && (
+              <div className="mt-3">
+                {affEarningsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="w-6 h-6 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+                  </div>
+                ) : affEarnings.length === 0 ? (
+                  <p className="text-sm text-page-muted text-center py-6">{t('topup.noEarnings') || '暂无收入记录'}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {affEarnings.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between glass-sm rounded-xl px-4 py-3">
+                        <div>
+                          <p className="text-sm text-page">{item.model_name}</p>
+                          <p className="text-xs text-page-muted">
+                            {new Date(item.created_time * 1000).toLocaleString()} · {(item.commission_rate * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                        <span className="text-sm font-medium text-page-success">
+                          +{symbol}{(item.commission_quota / Q * rate).toFixed(4)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
