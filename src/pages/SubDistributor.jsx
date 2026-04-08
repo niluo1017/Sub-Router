@@ -88,7 +88,6 @@ export default function SubDistributor() {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
         payment_method: form.payment_method,
-        return_url: subInfo?.manage_url || '',
       };
       if (form.payment_method === 'crypto') {
         payload.chain = form.chain;
@@ -223,7 +222,7 @@ export default function SubDistributor() {
                 {t('subDist.currentUserHint', { user: user.display_name || user.username || 'User', method: currentPayMethod?.name || form.payment_method })}
               </p>
               <p className="text-xs text-page-muted">
-                {t('subDist.manageHint')}
+                {t('subDist.postPayHint')}
               </p>
             </form>
           )}
@@ -249,14 +248,7 @@ export default function SubDistributor() {
                 <span className="text-page-secondary">{t('subDist.openPrice')}</span>
                 <span className="text-2xl font-bold text-page">¥{Number(subInfo?.price || 0).toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-page-secondary">{t('subDist.platformBase')}</span>
-                <span className="text-page">¥{Number(subInfo?.base_cost || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-page-secondary">{t('subDist.parentSpread')}</span>
-                <span className="text-page-link font-semibold">¥{Number(subInfo?.price_spread || 0).toFixed(2)}</span>
-              </div>
+              <p className="text-sm text-page-secondary leading-6">{t('subDist.priceSummary')}</p>
             </div>
           </div>
 
@@ -264,16 +256,8 @@ export default function SubDistributor() {
             <h2 className="text-lg font-semibold text-page mb-4">{t('subDist.ruleTitle')}</h2>
             <div className="space-y-3 text-sm text-page-secondary leading-6">
               <p>{t('subDist.rule1')}</p>
-              <p>{t('subDist.rule2', { discount: Number(subInfo?.seller_discount || 0).toFixed(0) })}</p>
+              <p>{t('subDist.rule2')}</p>
               <p>{t('subDist.rule3')}</p>
-              {subInfo?.manage_url && (
-                <p>
-                  {t('subDist.manageUrlLabel')}{' '}
-                  <a className="text-page-link hover:underline" href={subInfo.manage_url} target="_blank" rel="noreferrer">
-                    {subInfo.manage_url}
-                  </a>
-                </p>
-              )}
             </div>
           </div>
         </div>
