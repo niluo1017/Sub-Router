@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { getUserUsage, redeemCode, getAffCode, transferAffQuota, getAffEarnings, Q, quotaToDollar } from '../api';
+import { getUserUsage, redeemCode, getAffCode, transferAffQuota, getAffEarnings, requestAffWithdraw, Q } from '../api';
 import { useCurrency, useSite } from '../context/SiteContext';
 import CountUp from '../components/bits/CountUp';
 import toast from 'react-hot-toast';
@@ -23,6 +23,11 @@ export default function Dashboard() {
   const [affEarningsLoading, setAffEarningsLoading] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferring, setTransferring] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [withdrawRemark, setWithdrawRemark] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -92,10 +97,61 @@ export default function Dashboard() {
     setTransferring(false);
   };
 
+  const resetWithdrawForm = () => {
+    setWithdrawAmount('');
+    setWithdrawMethod('');
+    setWithdrawRemark('');
+  };
+
+  const handleOpenWithdraw = () => {
+    resetWithdrawForm();
+    setShowWithdrawModal(true);
+  };
+
+  const handleCloseWithdraw = () => {
+    if (withdrawing) return;
+    resetWithdrawForm();
+    setShowWithdrawModal(false);
+  };
+
   const quota = usage?.quota ?? user?.quota ?? 0;
   const usedQuota = usage?.used_quota ?? user?.used_quota ?? 0;
   const requestCount = usage?.request_count ?? user?.request_count ?? 0;
   const balanceDollars = quota / Q * rate;
+  const availableAffAmount = ((user?.aff_quota || 0) / Q) * rate;
+  const currentCommissionRate = Number(user?.commission_rate || 0);
+
+  const handleWithdraw = async () => {
+    const amount = Number.parseFloat(withdrawAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t('topup.invalidWithdrawAmount'));
+      return;
+    }
+    if (amount - availableAffAmount > 1e-8) {
+      toast.error(t('topup.withdrawExceedsBalance'));
+      return;
+    }
+    if (!withdrawMethod.trim()) {
+      toast.error(t('topup.enterWithdrawMethod'));
+      return;
+    }
+
+    setWithdrawing(true);
+    try {
+      const res = await requestAffWithdraw({
+        amount: amount / rate,
+        payment_method: withdrawMethod.trim(),
+        remark: withdrawRemark.trim(),
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || t('topup.withdrawSuccess'));
+        setShowWithdrawModal(false);
+        resetWithdrawForm();
+        await Promise.all([loadData(), refreshUser()]);
+      }
+    } catch (err) { /* interceptor */ }
+    setWithdrawing(false);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
@@ -189,8 +245,16 @@ export default function Dashboard() {
       {/* Invitation / Affiliate */}
       {affLink && (
         <div className="glass rounded-2xl p-6 mt-6">
-          <h2 className="text-lg font-semibold text-page mb-1">{t('topup.inviteTitle')}</h2>
-          <p className="text-sm text-page-secondary mb-5">{t('topup.inviteSubtitle')}</p>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-page mb-1">{t('topup.inviteTitle')}</h2>
+              <p className="text-sm text-page-secondary">{t('topup.inviteSubtitle')}</p>
+            </div>
+            <div className="inline-flex items-center gap-2 self-start rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-xs font-medium text-page">
+              <span className="text-page-secondary">{t('topup.currentCommissionRateLabel')}</span>
+              <span className="text-page-link">{(currentCommissionRate * 100).toFixed(1)}%</span>
+            </div>
+          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -234,7 +298,16 @@ export default function Dashboard() {
           {/* Transfer to balance */}
           {(user?.aff_quota || 0) > 0 && (
             <div className="mb-5">
-              <label className="block text-sm font-medium text-page-label mb-2">{t('topup.transferToBalance')}</label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="block text-sm font-medium text-page-label">{t('topup.transferToBalance')}</label>
+                <button
+                  type="button"
+                  onClick={handleOpenWithdraw}
+                  className="btn-secondary whitespace-nowrap px-4 py-2 text-sm"
+                >
+                  {t('topup.withdraw')}
+                </button>
+              </div>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -290,6 +363,102 @@ export default function Dashboard() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showWithdrawModal && (
+        <div
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={handleCloseWithdraw}
+        >
+          <div
+            className="glass w-full max-w-md rounded-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-5">
+              <h3 className="text-lg font-semibold text-page mb-1">{t('topup.withdrawTitle')}</h3>
+              <p className="text-sm text-page-secondary">{t('topup.withdrawSubtitle')}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.withdrawAvailable')}</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={`${symbol}${availableAffAmount.toFixed(2)}`}
+                  className="input bg-page-surface-hover/60 text-page-secondary"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.withdrawAmount')}</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-page-muted">
+                      {symbol}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="input pl-8"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawAmount(availableAffAmount.toFixed(2))}
+                    className="btn-secondary whitespace-nowrap px-4"
+                  >
+                    {t('topup.withdrawAll')}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.withdrawMethod')}</label>
+                <input
+                  type="text"
+                  value={withdrawMethod}
+                  onChange={(e) => setWithdrawMethod(e.target.value)}
+                  placeholder={t('topup.withdrawMethodPlaceholder')}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.withdrawRemark')}</label>
+                <textarea
+                  value={withdrawRemark}
+                  onChange={(e) => setWithdrawRemark(e.target.value)}
+                  placeholder={t('topup.withdrawRemarkPlaceholder')}
+                  className="input min-h-[96px] resize-y"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCloseWithdraw}
+                disabled={withdrawing}
+                className="btn-secondary px-4 py-2"
+              >
+                {t('tokens.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleWithdraw}
+                disabled={withdrawing}
+                className="btn-primary px-4 py-2"
+              >
+                {withdrawing ? t('topup.processing') : t('topup.submitWithdraw')}
+              </button>
+            </div>
           </div>
         </div>
       )}
