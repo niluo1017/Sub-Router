@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getUserUsage, redeemCode, getAffCode, transferAffQuota, getAffEarnings, Q, quotaToDollar } from '../api';
-import { useCurrency } from '../context/SiteContext';
+import { useCurrency, useSite } from '../context/SiteContext';
 import CountUp from '../components/bits/CountUp';
 import toast from 'react-hot-toast';
 
@@ -11,6 +11,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { symbol, rate } = useCurrency();
+  const { site } = useSite();
   const [usage, setUsage] = useState(null);
   const [redeemInput, setRedeemInput] = useState('');
   const [redeeming, setRedeeming] = useState(false);
@@ -175,6 +176,12 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('dashboard.logs')}</p>
               <p className="text-xs text-page-muted">{t('dashboard.viewLogs')}</p>
             </Link>
+            {site?.allow_sub_dist && (
+              <Link to="/sub-site" className="glass-sm !rounded-xl px-4 py-3 hover:bg-page-surface-hover transition-colors group">
+                <p className="text-sm font-medium text-page group-hover:text-page-link transition-colors">{t('subDist.nav')}</p>
+                <p className="text-xs text-page-muted">{t('subDist.dashboardEntry')}</p>
+              </Link>
+            )}
           </div>
         </div>
       </div>
