@@ -87,6 +87,8 @@ export const transferAffQuota = (data) => api.post('/api/dist/aff_transfer', dat
 export const getAffEarnings = (params) => api.get('/api/dist/aff_earnings', { params });
 export const getAffPayouts = (params) => api.get('/api/dist/aff_payouts', { params });
 export const requestAffWithdraw = (data) => api.post('/api/dist/aff_withdraw', data);
+export const submitDistKolApply = (data) => api.post('/api/dist/kol_apply', data);
+export const getDistKolStatus = () => api.get('/api/dist/kol_status');
 export const createSubDistributorOrder = (data) => api.post('/api/dist/site/sub-distributor/pay', data);
 
 // ===== Helpers =====

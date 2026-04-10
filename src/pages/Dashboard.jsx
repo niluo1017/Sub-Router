@@ -2,7 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { getUserUsage, redeemCode, getAffCode, transferAffQuota, getAffEarnings, requestAffWithdraw, Q } from '../api';
+import {
+  getUserUsage,
+  redeemCode,
+  getAffCode,
+  transferAffQuota,
+  getAffEarnings,
+  requestAffWithdraw,
+  getDistKolStatus,
+  submitDistKolApply,
+  Q,
+} from '../api';
 import { useCurrency, useSite } from '../context/SiteContext';
 import CountUp from '../components/bits/CountUp';
 import toast from 'react-hot-toast';
@@ -28,21 +38,36 @@ export default function Dashboard() {
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawRemark, setWithdrawRemark] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
+  const [distKolStatus, setDistKolStatus] = useState(null);
+  const [showKolApplyModal, setShowKolApplyModal] = useState(false);
+  const [kolApplyLoading, setKolApplyLoading] = useState(false);
+  const [socialLink, setSocialLink] = useState('');
+  const [followers, setFollowers] = useState('');
+  const [promotionPlan, setPromotionPlan] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
 
   const loadData = useCallback(async () => {
     try {
-      const [usageRes, affRes] = await Promise.all([
+      const [usageRes, affRes, kolRes] = await Promise.all([
         getUserUsage(),
         getAffCode().catch(() => null),
+        getDistKolStatus().catch(() => null),
       ]);
       if (usageRes.data.success) setUsage(usageRes.data.data);
       if (affRes?.data?.success && affRes.data.data) {
         setAffLink(`${window.location.origin}/register?aff=${affRes.data.data}`);
       }
-    } catch (e) { /* interceptor */ }
+      if (kolRes?.data?.success) {
+        setDistKolStatus(kolRes.data.data || null);
+      }
+    } catch (e) {
+      /* interceptor */
+    }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleRedeem = async (e) => {
     e.preventDefault();
@@ -55,7 +80,9 @@ export default function Dashboard() {
         setRedeemInput('');
         await Promise.all([loadData(), refreshUser()]);
       }
-    } catch (err) { /* interceptor */ }
+    } catch (err) {
+      /* interceptor */
+    }
     setRedeeming(false);
   };
 
@@ -66,7 +93,9 @@ export default function Dashboard() {
       if (res.data.success && res.data.data) {
         setAffEarnings(res.data.data);
       }
-    } catch (e) { /* interceptor */ }
+    } catch (e) {
+      /* interceptor */
+    }
     setAffEarningsLoading(false);
   };
 
@@ -93,7 +122,9 @@ export default function Dashboard() {
         setTransferAmount('');
         await Promise.all([loadData(), refreshUser()]);
       }
-    } catch (e) { /* interceptor */ }
+    } catch (e) {
+      /* interceptor */
+    }
     setTransferring(false);
   };
 
@@ -114,12 +145,35 @@ export default function Dashboard() {
     setShowWithdrawModal(false);
   };
 
+  const resetKolApplyForm = () => {
+    setSocialLink('');
+    setFollowers('');
+    setPromotionPlan('');
+    setContactInfo('');
+  };
+
+  const handleOpenKolApply = () => {
+    resetKolApplyForm();
+    setShowKolApplyModal(true);
+  };
+
+  const handleCloseKolApply = () => {
+    if (kolApplyLoading) return;
+    resetKolApplyForm();
+    setShowKolApplyModal(false);
+  };
+
   const quota = usage?.quota ?? user?.quota ?? 0;
   const usedQuota = usage?.used_quota ?? user?.used_quota ?? 0;
   const requestCount = usage?.request_count ?? user?.request_count ?? 0;
-  const balanceDollars = quota / Q * rate;
+  const balanceDollars = (quota / Q) * rate;
   const availableAffAmount = ((user?.aff_quota || 0) / Q) * rate;
-  const currentCommissionRate = Number(user?.commission_rate || 0);
+  const defaultCommissionRate = Number(user?.default_commission_rate ?? 0.05);
+  const currentCommissionRate = Number(
+    user?.commission_rate ?? defaultCommissionRate,
+  );
+  const hasCustomCommissionRate =
+    currentCommissionRate > defaultCommissionRate + 1e-8;
 
   const handleWithdraw = async () => {
     const amount = Number.parseFloat(withdrawAmount);
@@ -149,13 +203,107 @@ export default function Dashboard() {
         resetWithdrawForm();
         await Promise.all([loadData(), refreshUser()]);
       }
-    } catch (err) { /* interceptor */ }
+    } catch (err) {
+      /* interceptor */
+    }
     setWithdrawing(false);
+  };
+
+  const handleKolApply = async () => {
+    if (!socialLink.trim()) {
+      toast.error(t('topup.kolSocialRequired'));
+      return;
+    }
+    setKolApplyLoading(true);
+    try {
+      const res = await submitDistKolApply({
+        social_link: socialLink.trim(),
+        followers: followers.trim(),
+        promotion_plan: promotionPlan.trim(),
+        contact_info: contactInfo.trim(),
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || t('topup.kolApplySuccess'));
+        setShowKolApplyModal(false);
+        resetKolApplyForm();
+        await Promise.all([loadData(), refreshUser()]);
+      }
+    } catch (err) {
+      /* interceptor */
+    }
+    setKolApplyLoading(false);
+  };
+
+  const renderCommissionApplicationPanel = () => {
+    if (distKolStatus?.status === 0) {
+      return (
+        <div className="glass-sm rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-page">{t('topup.kolPendingTitle')}</p>
+              <p className="mt-1 text-xs text-page-secondary">{t('topup.kolPendingDesc')}</p>
+            </div>
+            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600">
+              {t('topup.kolPendingBadge')}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (distKolStatus?.status === 1 || hasCustomCommissionRate) {
+      return (
+        <div className="glass-sm rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-page">{t('topup.kolApprovedTitle')}</p>
+              <p className="mt-1 text-xs text-page-secondary">{t('topup.kolApprovedDesc')}</p>
+            </div>
+            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600">
+              {(currentCommissionRate * 100).toFixed(1)}%
+            </span>
+          </div>
+          {distKolStatus?.admin_remark && (
+            <p className="mt-3 text-xs text-page-muted">
+              {t('topup.kolRemarkLabel')}
+              {distKolStatus.admin_remark}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="glass-sm rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-page">{t('topup.kolApplyTitle')}</p>
+            <p className="mt-1 text-xs text-page-secondary">
+              {t('topup.kolApplyDesc', {
+                rate: (defaultCommissionRate * 100).toFixed(1),
+              })}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenKolApply}
+            className="btn-primary whitespace-nowrap px-4 py-2 text-sm"
+          >
+            {t('topup.kolApplyAction')}
+          </button>
+        </div>
+        {distKolStatus?.status === 2 && (
+          <p className="mt-3 text-xs text-red-500">
+            {t('topup.kolRejectedLabel')}
+            {distKolStatus.admin_remark || t('topup.kolRejectedFallback')}
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
-      {/* Welcome */}
       <div className="mb-8">
         <h1 className="text-2xl font-heading font-bold text-page mb-1">
           {t('dashboard.welcome')} {user?.display_name || user?.username || 'User'}
@@ -163,12 +311,12 @@ export default function Dashboard() {
         <p className="text-sm text-page-secondary">{t('dashboard.manageDesc')}</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.balance')}</p>
           <div className="text-3xl font-bold text-page">
-            {symbol}<CountUp from={0} to={Math.round(balanceDollars * 100) / 100} duration={1.5} />
+            {symbol}
+            <CountUp from={0} to={Math.round(balanceDollars * 100) / 100} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: quota.toLocaleString() })}</p>
         </div>
@@ -176,7 +324,8 @@ export default function Dashboard() {
         <div className="glass rounded-2xl p-6">
           <p className="text-sm text-page-secondary mb-2">{t('dashboard.used')}</p>
           <div className="text-3xl font-bold text-page">
-            {symbol}<CountUp from={0} to={Math.round(usedQuota / Q * rate * 100) / 100} duration={1.5} />
+            {symbol}
+            <CountUp from={0} to={Math.round((usedQuota / Q) * rate * 100) / 100} duration={1.5} />
           </div>
           <p className="text-xs text-page-muted mt-1">{t('dashboard.quotaUnits', { count: usedQuota.toLocaleString() })}</p>
         </div>
@@ -189,9 +338,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Redeem Code */}
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-page mb-4">{t('dashboard.redeemCode')}</h2>
           <form onSubmit={handleRedeem} className="flex gap-3">
@@ -208,7 +355,6 @@ export default function Dashboard() {
           </form>
         </div>
 
-        {/* Quick Links */}
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-page mb-4">{t('dashboard.quickLinks')}</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -242,7 +388,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Invitation / Affiliate */}
       {affLink && (
         <div className="glass rounded-2xl p-6 mt-6">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -256,18 +401,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Stats */}
+          <p className="mb-5 text-xs text-page-muted">
+            {t('topup.currentCommissionRateDesc', {
+              rate: (defaultCommissionRate * 100).toFixed(1),
+            })}
+          </p>
+
+          <div className="mb-5">
+            {renderCommissionApplicationPanel()}
+          </div>
+
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="glass-sm rounded-xl p-4 text-center">
               <p className="text-xs text-page-secondary mb-1">{t('topup.affAvailable')}</p>
               <p className="text-xl font-bold text-page">
-                {symbol}{((user?.aff_quota || 0) / Q * rate).toFixed(2)}
+                {symbol}{(((user?.aff_quota || 0) / Q) * rate).toFixed(2)}
               </p>
             </div>
             <div className="glass-sm rounded-xl p-4 text-center">
               <p className="text-xs text-page-secondary mb-1">{t('topup.affTotal')}</p>
               <p className="text-xl font-bold text-page">
-                {symbol}{((user?.aff_history_quota || 0) / Q * rate).toFixed(2)}
+                {symbol}{(((user?.aff_history_quota || 0) / Q) * rate).toFixed(2)}
               </p>
             </div>
             <div className="glass-sm rounded-xl p-4 text-center">
@@ -276,35 +430,21 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Invitation Link */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-page-label mb-2">{t('topup.inviteLink')}</label>
             <div className="flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={affLink}
-                className="input flex-1 text-sm"
-              />
-              <button
-                onClick={handleCopyAffLink}
-                className="btn-primary whitespace-nowrap text-sm px-4"
-              >
+              <input type="text" readOnly value={affLink} className="input flex-1 text-sm" />
+              <button onClick={handleCopyAffLink} className="btn-primary whitespace-nowrap text-sm px-4">
                 {t('topup.copy')}
               </button>
             </div>
           </div>
 
-          {/* Transfer to balance */}
           {(user?.aff_quota || 0) > 0 && (
             <div className="mb-5">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <label className="block text-sm font-medium text-page-label">{t('topup.transferToBalance')}</label>
-                <button
-                  type="button"
-                  onClick={handleOpenWithdraw}
-                  className="btn-secondary whitespace-nowrap px-4 py-2 text-sm"
-                >
+                <button type="button" onClick={handleOpenWithdraw} className="btn-secondary whitespace-nowrap px-4 py-2 text-sm">
                   {t('topup.withdraw')}
                 </button>
               </div>
@@ -317,21 +457,19 @@ export default function Dashboard() {
                   className="input flex-1 text-sm"
                   min={1}
                 />
-                <button
-                  onClick={handleTransfer}
-                  disabled={transferring}
-                  className="btn-primary whitespace-nowrap text-sm px-4"
-                >
+                <button onClick={handleTransfer} disabled={transferring} className="btn-primary whitespace-nowrap text-sm px-4">
                   {transferring ? t('topup.processing') : t('topup.transfer')}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Earnings Details */}
           <div>
             <button
-              onClick={() => { setShowAffEarnings(!showAffEarnings); if (!showAffEarnings) loadAffEarnings(); }}
+              onClick={() => {
+                setShowAffEarnings(!showAffEarnings);
+                if (!showAffEarnings) loadAffEarnings();
+              }}
               className="text-sm text-page-secondary hover:text-page transition-colors"
             >
               {showAffEarnings ? t('topup.hideEarnings') : t('topup.viewEarnings')}
@@ -355,7 +493,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <span className="text-sm font-medium text-page-success">
-                          +{symbol}{(item.commission_quota / Q * rate).toFixed(4)}
+                          +{symbol}{((item.commission_quota / Q) * rate).toFixed(4)}
                         </span>
                       </div>
                     ))}
@@ -372,10 +510,7 @@ export default function Dashboard() {
           className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={handleCloseWithdraw}
         >
-          <div
-            className="glass w-full max-w-md rounded-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="glass w-full max-w-md rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5">
               <h3 className="text-lg font-semibold text-page mb-1">{t('topup.withdrawTitle')}</h3>
               <p className="text-sm text-page-secondary">{t('topup.withdrawSubtitle')}</p>
@@ -409,11 +544,7 @@ export default function Dashboard() {
                       className="input pl-8"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawAmount(availableAffAmount.toFixed(2))}
-                    className="btn-secondary whitespace-nowrap px-4"
-                  >
+                  <button type="button" onClick={() => setWithdrawAmount(availableAffAmount.toFixed(2))} className="btn-secondary whitespace-nowrap px-4">
                     {t('topup.withdrawAll')}
                   </button>
                 </div>
@@ -442,21 +573,79 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseWithdraw}
-                disabled={withdrawing}
-                className="btn-secondary px-4 py-2"
-              >
+              <button type="button" onClick={handleCloseWithdraw} disabled={withdrawing} className="btn-secondary px-4 py-2">
                 {t('tokens.cancel')}
               </button>
-              <button
-                type="button"
-                onClick={handleWithdraw}
-                disabled={withdrawing}
-                className="btn-primary px-4 py-2"
-              >
+              <button type="button" onClick={handleWithdraw} disabled={withdrawing} className="btn-primary px-4 py-2">
                 {withdrawing ? t('topup.processing') : t('topup.submitWithdraw')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showKolApplyModal && (
+        <div
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={handleCloseKolApply}
+        >
+          <div className="glass w-full max-w-md rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-5">
+              <h3 className="text-lg font-semibold text-page mb-1">{t('topup.kolApplyModalTitle')}</h3>
+              <p className="text-sm text-page-secondary">{t('topup.kolApplyModalDesc')}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.kolSocialLabel')}</label>
+                <input
+                  type="text"
+                  value={socialLink}
+                  onChange={(e) => setSocialLink(e.target.value)}
+                  placeholder={t('topup.kolSocialPlaceholder')}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.kolFollowersLabel')}</label>
+                <input
+                  type="text"
+                  value={followers}
+                  onChange={(e) => setFollowers(e.target.value)}
+                  placeholder={t('topup.kolFollowersPlaceholder')}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.kolPlanLabel')}</label>
+                <textarea
+                  value={promotionPlan}
+                  onChange={(e) => setPromotionPlan(e.target.value)}
+                  placeholder={t('topup.kolPlanPlaceholder')}
+                  className="input min-h-[96px] resize-y"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-page-label">{t('topup.kolContactLabel')}</label>
+                <input
+                  type="text"
+                  value={contactInfo}
+                  onChange={(e) => setContactInfo(e.target.value)}
+                  placeholder={t('topup.kolContactPlaceholder')}
+                  className="input"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={handleCloseKolApply} disabled={kolApplyLoading} className="btn-secondary px-4 py-2">
+                {t('tokens.cancel')}
+              </button>
+              <button type="button" onClick={handleKolApply} disabled={kolApplyLoading} className="btn-primary px-4 py-2">
+                {kolApplyLoading ? t('topup.processing') : t('topup.kolApplySubmit')}
               </button>
             </div>
           </div>
