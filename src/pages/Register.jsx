@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,14 @@ export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', password: '', password2: '', email: '' });
   const [loading, setLoading] = useState(false);
+
+  // Capture aff code from URL and persist in localStorage
+  useEffect(() => {
+    const affCode = new URLSearchParams(window.location.search).get('aff');
+    if (affCode) {
+      localStorage.setItem('dist_aff', affCode);
+    }
+  }, []);
 
   // If already logged in, redirect via component
   if (user) {
@@ -38,10 +46,12 @@ export default function Register() {
     }
     setLoading(true);
     try {
+      const affCode = new URLSearchParams(window.location.search).get('aff') || localStorage.getItem('dist_aff') || '';
       const result = await register({
         username: form.username,
         password: form.password,
         email: form.email || undefined,
+        aff_code: affCode || undefined,
       });
       if (result.success) {
         toast.success(t('register.accountCreated'));

@@ -45,10 +45,25 @@ export default function Pricing() {
         (m.display_name || m.model_name || '').toLowerCase().includes(q)
       );
     }
-    // Sort by input_price ascending
-    list = [...list].sort((a, b) => (Number(a.input_price) || 0) - (Number(b.input_price) || 0));
+    list = [...list].sort((a, b) => {
+      if (!!a.is_per_call !== !!b.is_per_call) {
+        return a.is_per_call ? 1 : -1;
+      }
+      if (a.is_per_call) {
+        return (Number(a.fixed_price) || 0) - (Number(b.fixed_price) || 0);
+      }
+      return (Number(a.input_price) || 0) - (Number(b.input_price) || 0);
+    });
     return list;
   }, [enabledModels, vendor, search]);
+
+  const formatTokenPrice = (price) =>
+    price != null ? `${symbol}${(Number(price) * 1000 * rate).toFixed(4)}` : '-';
+
+  const formatPerCallPrice = (price) =>
+    price != null
+      ? `${symbol}${(Number(price) * rate).toFixed(4)}/${t('pricing.perCallUnit')}`
+      : '-';
 
   if (loading) {
     return (
@@ -134,10 +149,10 @@ export default function Pricing() {
                     <span className="font-mono text-page">{m.display_name || m.model_name}</span>
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
-                    {m.input_price != null ? `${symbol}${(Number(m.input_price) * 1000 * rate).toFixed(4)}` : '-'}
+                    {m.is_per_call ? t('pricing.perCall') : formatTokenPrice(m.input_price)}
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
-                    {m.output_price != null ? `${symbol}${(Number(m.output_price) * 1000 * rate).toFixed(4)}` : '-'}
+                    {m.is_per_call ? formatPerCallPrice(m.fixed_price) : formatTokenPrice(m.output_price)}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTokens, createToken, updateToken, deleteToken, getSiteKeyGroups } from '../api';
-import ConfigExporter from '../components/ConfigExporter';
 import toast from 'react-hot-toast';
 
 export default function Tokens() {
@@ -200,7 +199,7 @@ export default function Tokens() {
 
       {/* ========== Create Modal ========== */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }}>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }}>
           <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-page mb-4">{t('tokens.createApiKey')}</h2>
             {selectedGroupId > 0 && (() => {
@@ -240,7 +239,7 @@ export default function Tokens() {
 
       {/* ========== New Key Reveal Modal ========== */}
       {newKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass rounded-2xl p-6 w-full max-w-lg">
             <h2 className="text-lg font-semibold text-page mb-2">{t('tokens.newApiKey')}</h2>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 mb-4">
@@ -270,7 +269,7 @@ export default function Tokens() {
 
       {/* ========== Delete Confirmation Modal ========== */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
           <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-page mb-3">{t('tokens.deleteToken')}</h2>
             <p className="text-sm text-page-secondary mb-4">
@@ -350,11 +349,6 @@ export default function Tokens() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Config File Generator */}
-      <div className="mt-8">
-        <ConfigExporter />
       </div>
     </div>
   );

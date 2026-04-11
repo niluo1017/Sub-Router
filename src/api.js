@@ -48,6 +48,7 @@ export const getSiteModels = () => api.get('/api/dist/site/models');
 export const getSitePricing = () => api.get('/api/dist/site/pricing');
 export const getSitePackages = () => api.get('/api/dist/site/packages');
 export const getSiteKeyGroups = () => api.get('/api/dist/site/key-groups');
+export const getSubDistributorInfo = () => api.get('/api/dist/site/sub-distributor/info');
 
 // ===== Auth =====
 export const register = (data) => api.post('/api/dist/user/register', data);
@@ -79,6 +80,16 @@ export const createCreemOrder = (data) => api.post('/api/dist/topup/creem/pay', 
 export const createCryptoOrder = (data) => api.post('/api/dist/topup/crypto/pay', data);
 export const getCryptoOrderStatus = (tradeNo) => api.get(`/api/dist/topup/crypto/status?trade_no=${tradeNo}`);
 export const getTopupHistory = (params) => api.get('/api/dist/topup/history', { params });
+
+// ===== Affiliate / Invitation =====
+export const getAffCode = () => api.get('/api/dist/aff');
+export const transferAffQuota = (data) => api.post('/api/dist/aff_transfer', data);
+export const getAffEarnings = (params) => api.get('/api/dist/aff_earnings', { params });
+export const getAffPayouts = (params) => api.get('/api/dist/aff_payouts', { params });
+export const requestAffWithdraw = (data) => api.post('/api/dist/aff_withdraw', data);
+export const submitDistKolApply = (data) => api.post('/api/dist/kol_apply', data);
+export const getDistKolStatus = () => api.get('/api/dist/kol_status');
+export const createSubDistributorOrder = (data) => api.post('/api/dist/site/sub-distributor/pay', data);
 
 // ===== Helpers =====
 export const quotaToDollar = (quota) => (quota / Q).toFixed(4);

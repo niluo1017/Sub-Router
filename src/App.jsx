@@ -11,6 +11,7 @@ const Packages = lazy(() => import('./pages/Packages'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Topup = lazy(() => import('./pages/Topup'));
 const Logs = lazy(() => import('./pages/Logs'));
+const SubDistributor = lazy(() => import('./pages/SubDistributor'));
 
 const Loading = () => (
   <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -30,6 +31,7 @@ function ThemedRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/packages" element={<Packages />} />
+          <Route path="/sub-site" element={<SubDistributor />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
