@@ -28,6 +28,7 @@ export default function Topup() {
 
   // Online topup
   const [amount, setAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [payAmount, setPayAmount] = useState(null);
   const [amountLoading, setAmountLoading] = useState(false);
@@ -50,6 +51,14 @@ export default function Topup() {
 
   const enableTopup = site?.enable_topup && topupInfo;
   const topupConfig = site?.topup_config;
+  const presetAmounts = topupInfo?.amount_options || [1, 5, 10, 20, 50, 100];
+  const minTopup = topupInfo?.min_topup || 1;
+  const payMethods = topupInfo?.pay_methods || [];
+  const enableOnline = topupInfo?.enable_online_topup;
+  const enableStripe = topupInfo?.enable_stripe_topup;
+  const enableCreem = topupInfo?.enable_creem_topup;
+  const enableCrypto = topupInfo?.enable_crypto_topup;
+  const hasAnyPayment = enableOnline || enableStripe || enableCreem || enableCrypto;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -70,6 +79,22 @@ export default function Topup() {
   const usedQuota = usage?.used_quota ?? user?.used_quota ?? 0;
   const requestCount = usage?.request_count ?? user?.request_count ?? 0;
   const balanceDollars = quota / Q * rate;
+
+  const formatCurrencyAmount = useCallback((value) => {
+    if (value === '' || value == null || Number.isNaN(Number(value))) return '';
+    return Number(value).toFixed(2).replace(/\.?0+$/, '');
+  }, []);
+
+  const toDisplayAmount = useCallback((quotaAmount) => {
+    if (quotaAmount === '' || quotaAmount == null) return '';
+    return formatCurrencyAmount(Number(quotaAmount) * rate);
+  }, [formatCurrencyAmount, rate]);
+
+  const toQuotaAmount = useCallback((currencyAmount) => {
+    const numeric = Number.parseFloat(currencyAmount);
+    if (!Number.isFinite(numeric) || numeric <= 0) return '';
+    return Math.max(minTopup, Math.round(numeric / rate));
+  }, [minTopup, rate]);
 
   // Redeem
   const handleRedeem = async (e) => {
@@ -103,7 +128,8 @@ export default function Topup() {
   // Select preset
   const handlePreset = (val) => {
     setSelectedPreset(val);
-    setAmount(val);
+    setAmount(String(val));
+    setDisplayAmount(toDisplayAmount(val));
     calcAmount(val);
   };
 
@@ -291,15 +317,6 @@ export default function Topup() {
     setHistoryLoading(false);
   };
 
-  const presetAmounts = topupInfo?.amount_options || [1, 5, 10, 20, 50, 100];
-  const minTopup = topupInfo?.min_topup || 1;
-  const payMethods = topupInfo?.pay_methods || [];
-  const enableOnline = topupInfo?.enable_online_topup;
-  const enableStripe = topupInfo?.enable_stripe_topup;
-  const enableCreem = topupInfo?.enable_creem_topup;
-  const enableCrypto = topupInfo?.enable_crypto_topup;
-  const hasAnyPayment = enableOnline || enableStripe || enableCreem || enableCrypto;
-
   // Filter pay methods: EPay methods + Stripe-based methods go in the main payment buttons
   // Creem and Crypto get their own sections
   const epayAndStripeMethods = payMethods.filter(
@@ -373,7 +390,7 @@ export default function Topup() {
                       : 'glass-sm text-page-label hover:text-page hover:bg-page-surface-hover'
                   }`}
                 >
-                  {symbol}{Math.round(val * rate)}
+                  {symbol}{formatCurrencyAmount(val * rate)}
                 </button>
               ))}
             </div>
@@ -385,28 +402,50 @@ export default function Topup() {
             <div className="flex gap-3">
               <input
                 type="number"
-                value={amount ? Math.round(amount * rate) : ''}
+                value={displayAmount}
                 onChange={(e) => {
-                  const cnyVal = e.target.value;
-                  const usdVal = cnyVal ? Math.max(1, Math.ceil(cnyVal / rate)) : '';
-                  setAmount(usdVal);
+                  const currentValue = e.target.value;
+                  setDisplayAmount(currentValue);
                   setSelectedPreset(null);
+                  const quotaAmount = toQuotaAmount(currentValue);
+                  setAmount(quotaAmount === '' ? '' : String(quotaAmount));
+                  calcAmount(quotaAmount);
                 }}
                 onBlur={(e) => {
-                  const cnyVal = e.target.value;
-                  const usdVal = cnyVal ? Math.max(1, Math.ceil(cnyVal / rate)) : '';
-                  calcAmount(usdVal);
+                  const quotaAmount = toQuotaAmount(e.target.value);
+                  if (quotaAmount === '') {
+                    setDisplayAmount('');
+                    setAmount('');
+                    setPayAmount(null);
+                    return;
+                  }
+                  setAmount(String(quotaAmount));
+                  setDisplayAmount(toDisplayAmount(quotaAmount));
+                  calcAmount(quotaAmount);
                 }}
-                min={Math.round(minTopup * rate)}
-                placeholder={t('topup.amountPlaceholder', { min: Math.round(minTopup * rate) })}
+                min={minTopup * rate}
+                step="0.01"
+                placeholder={t('topup.amountPlaceholder', { min: formatCurrencyAmount(minTopup * rate) })}
                 className="input flex-1"
               />
             </div>
+            <p className="text-xs text-page-muted mt-2">
+              {t('topup.customAmountHint')}
+            </p>
             {amountLoading ? (
               <p className="text-xs text-page-muted mt-2">{t('topup.calculating')}</p>
             ) : payAmount ? (
-              <p className="text-xs text-page-secondary mt-2">
-                {t('topup.payAmountLabel')}: <span className="text-page-success font-medium">¥{payAmount}</span>
+              <div className="mt-2 space-y-1 text-xs text-page-secondary">
+                <p>
+                  {t('topup.rechargeAmountLabel')}: <span className="text-page font-medium">{symbol}{displayAmount || toDisplayAmount(amount)}</span>
+                </p>
+                <p>
+                  {t('topup.payAmountLabel')}: <span className="text-page-success font-medium">{symbol}{payAmount}</span>
+                </p>
+              </div>
+            ) : amount ? (
+              <p className="text-xs text-page-muted mt-2">
+                {t('topup.rechargeAmountLabel')}: {symbol}{displayAmount || toDisplayAmount(amount)}
               </p>
             ) : null}
           </div>
