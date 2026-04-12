@@ -20,6 +20,24 @@ function getLogOther(otherStr) {
   }
 }
 
+function formatProviderPriceSnapshot(other, symbol, rate, t) {
+  if (!other?.provider_billing_mode) return '-';
+
+  const formatUSD = (amount) => `${symbol}${(Number(amount || 0) * rate).toFixed(6)}`;
+  if (other.provider_billing_mode === 'per_call') {
+    const fixedPrice = Number(other?.provider_fixed_price || 0);
+    if (fixedPrice <= 0) return t('按次计费');
+    return `${t('按次计费')} · ${formatUSD(fixedPrice)} / ${t('pricing.perCallUnit')}`;
+  }
+
+  const inputPrice = Number(other?.provider_input_price || 0);
+  const outputPrice = Number(other?.provider_output_price || 0);
+  const parts = [t('按量计费')];
+  if (inputPrice > 0) parts.push(`${t('输入')} ${formatUSD(inputPrice)} / 1M tokens`);
+  if (outputPrice > 0) parts.push(`${t('输出')} ${formatUSD(outputPrice)} / 1M tokens`);
+  return parts.join(' · ');
+}
+
 export default function Logs() {
   const { t } = useTranslation();
   const { symbol, rate } = useCurrency();
@@ -55,7 +73,7 @@ export default function Logs() {
     setExpandedRows(prev => ({ ...prev, [logId]: !prev[logId] }));
   };
 
-  const getExpandData = (log) => {
+  const getExpandData = useCallback((log) => {
     const other = getLogOther(log.other);
     if (!other) return [];
 
@@ -92,8 +110,19 @@ export default function Logs() {
       data.push({ key: t('计费方式'), value: t('订阅抵扣') });
     }
 
+    if (other.provider_name) {
+      data.push({ key: t('供应商'), value: other.provider_name });
+      data.push({
+        key: t('供应商定价'),
+        value: formatProviderPriceSnapshot(other, symbol, rate, t),
+      });
+      if (other.provider_description) {
+        data.push({ key: t('供应商介绍'), value: other.provider_description });
+      }
+    }
+
     return data;
-  };
+  }, [rate, symbol, t]);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">

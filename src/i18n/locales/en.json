@@ -204,6 +204,11 @@
     "pricing.unknown": "Unknown",
     "pricing.vendor": "Vendor",
     "pricing.allVendors": "All",
+    "供应商": "Provider",
+    "供应商介绍": "Provider introduction",
+    "供应商定价": "Provider pricing",
+    "按次计费": "Per call",
+    "按量计费": "Pay as you go",
 
     "packages.title": "Packages & Plans",
     "packages.subtitle": "Choose a package that fits your usage. All plans include access to all available models.",
