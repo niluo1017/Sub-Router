@@ -386,11 +386,19 @@
     "logs.next": "Next",
     "缓存命中 Tokens": "Cache Hit Tokens",
     "缓存创建 Tokens": "Cache Creation Tokens",
+    "缓存创建 Tokens (5m)": "Cache Creation Tokens (5m)",
+    "缓存创建 Tokens (1h)": "Cache Creation Tokens (1h)",
     "流式": "Streaming",
     "是": "Yes",
     "否": "No",
     "首字时间": "First Token Time",
     "计费方式": "Billing Method",
-    "订阅抵扣": "Subscription Deduction"
+    "订阅抵扣": "Subscription Deduction",
+    "分站定价": "Sub-site Pricing",
+    "价格": "Price",
+    "输入价格": "Input Price",
+    "输出价格": "Output Price",
+    "缓存读取价格": "Cache Read Price",
+    "缓存创建价格": "Cache Creation Price"
   }
 }

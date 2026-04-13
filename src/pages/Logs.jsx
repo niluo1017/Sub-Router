@@ -20,31 +20,71 @@ function getLogOther(otherStr) {
   }
 }
 
-function formatSitePriceSnapshot(other, symbol, rate, t) {
-  if (!other?.site_billing_mode) return '-';
-
-  const formatUSD = (amount) => `${symbol}${(Number(amount || 0) * rate).toFixed(6)}`;
-  if (other.site_billing_mode === 'per_call') {
-    const fixedPrice = Number(other?.site_fixed_price || 0);
-    if (fixedPrice <= 0) return t('按次计费');
-    return `${t('按次计费')} · ${formatUSD(fixedPrice)} / ${t('pricing.perCallUnit')}`;
-  }
-
-  const inputPrice = Number(other?.site_input_price || 0);
-  const outputPrice = Number(other?.site_output_price || 0);
-  const parts = [t('按量计费')];
-  if (inputPrice > 0) parts.push(`${t('输入')} ${formatUSD(inputPrice)} / 1M tokens`);
-  if (outputPrice > 0) parts.push(`${t('输出')} ${formatUSD(outputPrice)} / 1M tokens`);
-  return parts.join(' · ');
+function formatAmount(symbol, rate, amount) {
+  return `${symbol}${(Number(amount || 0) * rate).toFixed(6)}`;
 }
 
-function formatProviderSummary(other, t) {
-  if (!other?.provider_name) return [];
-  const items = [{ key: t('供应商'), value: other.provider_name }];
+function getProviderSummary(other) {
+  if (!other?.provider_name) return '';
   if (other.provider_description) {
-    items.push({ key: t('供应商介绍'), value: other.provider_description });
+    return `${other.provider_name}：${other.provider_description}`;
   }
-  return items;
+  return other.provider_name;
+}
+
+function getSitePricingDetails(other, symbol, rate, t) {
+  if (!other?.site_billing_mode) return [];
+
+  if (other.site_billing_mode === 'per_call') {
+    return [
+      { key: t('分站定价'), value: t('按次计费') },
+      { key: t('价格'), value: formatAmount(symbol, rate, other.site_fixed_price) },
+    ];
+  }
+
+  const details = [{ key: t('分站定价'), value: t('按量计费') }];
+  if (Number(other.site_input_price || 0) > 0) {
+    details.push({
+      key: t('输入价格'),
+      value: `${formatAmount(symbol, rate, other.site_input_price)} / 1M tokens`,
+    });
+  }
+  if (Number(other.site_output_price || 0) > 0) {
+    details.push({
+      key: t('输出价格'),
+      value: `${formatAmount(symbol, rate, other.site_output_price)} / 1M tokens`,
+    });
+  }
+  if (Number(other.site_cache_read_price || 0) > 0) {
+    details.push({
+      key: t('缓存读取价格'),
+      value: `${formatAmount(symbol, rate, other.site_cache_read_price)} / 1M tokens`,
+    });
+  }
+
+  const cacheCreate5m = Number(other.site_cache_creation_price_5m || 0);
+  const cacheCreate1h = Number(other.site_cache_creation_price_1h || 0);
+  const cacheCreate = Number(other.site_cache_creation_price || 0);
+  if (cacheCreate5m > 0 || cacheCreate1h > 0) {
+    const parts = [];
+    if (cacheCreate5m > 0) {
+      parts.push(`5m ${formatAmount(symbol, rate, cacheCreate5m)} / 1M tokens`);
+    }
+    if (cacheCreate1h > 0) {
+      parts.push(`1h ${formatAmount(symbol, rate, cacheCreate1h)} / 1M tokens`);
+    }
+    details.push({
+      key: t('缓存创建价格'),
+      value: parts.join(' / '),
+    });
+  } else if (cacheCreate > 0) {
+    details.push({
+      key: t('缓存创建价格'),
+      value: `${formatAmount(symbol, rate, cacheCreate)} / 1M tokens`,
+    });
+  }
+
+  return details;
 }
 
 export default function Logs() {
@@ -88,14 +128,24 @@ export default function Logs() {
 
     const data = [];
 
-    // Cache hits
-    if (other.cache_tokens > 0) {
-      data.push({ key: t('缓存命中 Tokens'), value: other.cache_tokens.toLocaleString() });
+    const providerSummary = getProviderSummary(other);
+    if (providerSummary) {
+      data.push({ key: t('供应商'), value: providerSummary });
     }
 
-    // Cache creation
+    data.push(...getSitePricingDetails(other, symbol, rate, t));
+
+    if (other.cache_tokens > 0) {
+      data.push({ key: t('缓存命中 Tokens'), value: Number(other.cache_tokens).toLocaleString() });
+    }
     if (other.cache_creation_tokens > 0) {
-      data.push({ key: t('缓存创建 Tokens'), value: other.cache_creation_tokens.toLocaleString() });
+      data.push({ key: t('缓存创建 Tokens'), value: Number(other.cache_creation_tokens).toLocaleString() });
+    }
+    if (other.cache_creation_tokens_5m > 0) {
+      data.push({ key: t('缓存创建 Tokens (5m)'), value: Number(other.cache_creation_tokens_5m).toLocaleString() });
+    }
+    if (other.cache_creation_tokens_1h > 0) {
+      data.push({ key: t('缓存创建 Tokens (1h)'), value: Number(other.cache_creation_tokens_1h).toLocaleString() });
     }
 
     // Request ID
@@ -117,16 +167,6 @@ export default function Logs() {
     // Billing source
     if (other.billing_source === 'subscription') {
       data.push({ key: t('计费方式'), value: t('订阅抵扣') });
-    }
-
-    const providerInfo = formatProviderSummary(other, t);
-    data.push(...providerInfo);
-
-    if (other.site_billing_mode) {
-      data.push({
-        key: t('分站定价'),
-        value: formatSitePriceSnapshot(other, symbol, rate, t),
-      });
     }
 
     return data;
