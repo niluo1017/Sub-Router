@@ -62,6 +62,7 @@ export const getUserLogs = (params) => api.get('/api/dist/user/logs', { params }
 
 // ===== Tokens =====
 export const getTokens = () => api.get('/api/dist/token/list');
+export const getTokenSupportedModels = (id) => api.get(`/api/dist/token/${id}/models`);
 export const createToken = (data) => api.post('/api/dist/token/create', data);
 export const updateToken = (id, data) => api.put(`/api/dist/token/${id}`, data);
 export const deleteToken = (id) => api.delete(`/api/dist/token/${id}`);

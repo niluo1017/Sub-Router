@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getTokens, createToken, updateToken, deleteToken, getSiteKeyGroups } from '../api';
+import { getTokens, createToken, updateToken, deleteToken, getSiteKeyGroups, getTokenSupportedModels } from '../api';
 import toast from 'react-hot-toast';
 
 export default function Tokens() {
@@ -10,6 +10,8 @@ export default function Tokens() {
   const [copiedId, setCopiedId] = useState(null);
   const [newKey, setNewKey] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [expandedTokens, setExpandedTokens] = useState({});
+  const [tokenModels, setTokenModels] = useState({});
 
   // Key groups
   const [keyGroups, setKeyGroups] = useState([]);
@@ -126,6 +128,45 @@ export default function Tokens() {
 
   const parseTags = (tagsStr) => {
     try { return JSON.parse(tagsStr || '[]'); } catch { return []; }
+  };
+
+  const handleToggleSupportedModels = async (tokenId) => {
+    const isExpanded = !!expandedTokens[tokenId];
+    setExpandedTokens((prev) => ({ ...prev, [tokenId]: !isExpanded }));
+    if (isExpanded || tokenModels[tokenId]) return;
+
+    setTokenModels((prev) => ({
+      ...prev,
+      [tokenId]: { loading: true, models: [], count: 0, provider_names: [], restricted_by_providers: false, restricted_by_models: false },
+    }));
+
+    try {
+      const res = await getTokenSupportedModels(tokenId);
+      if (res.data.success) {
+        const data = res.data.data || {};
+        setTokenModels((prev) => ({
+          ...prev,
+          [tokenId]: {
+            loading: false,
+            models: data.models || [],
+            count: data.count || 0,
+            provider_names: data.provider_names || [],
+            restricted_by_providers: Boolean(data.restricted_by_providers),
+            restricted_by_models: Boolean(data.restricted_by_models),
+          },
+        }));
+      } else {
+        setTokenModels((prev) => ({
+          ...prev,
+          [tokenId]: { loading: false, error: true, models: [], count: 0, provider_names: [], restricted_by_providers: false, restricted_by_models: false },
+        }));
+      }
+    } catch (e) {
+      setTokenModels((prev) => ({
+        ...prev,
+        [tokenId]: { loading: false, error: true, models: [], count: 0, provider_names: [], restricted_by_providers: false, restricted_by_models: false },
+      }));
+    }
   };
 
   if (loading) {
@@ -315,6 +356,12 @@ export default function Tokens() {
                   </span>
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handleToggleSupportedModels(token.id)}
+                      className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
+                    >
+                      {expandedTokens[token.id] ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
+                    </button>
+                    <button
                       onClick={() => handleToggle(token)}
                       className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
                         token.status === 1
@@ -343,6 +390,57 @@ export default function Tokens() {
                     >
                       {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
                     </button>
+                  </div>
+                )}
+                {expandedTokens[token.id] && (
+                  <div className="mt-3 rounded-xl border border-page-divider bg-page-surface/50 px-4 py-3">
+                    {tokenModels[token.id]?.loading ? (
+                      <div className="flex items-center gap-2 text-sm text-page-secondary">
+                        <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+                        <span>{t('tokens.loadingSupportedModels')}</span>
+                      </div>
+                    ) : tokenModels[token.id]?.error ? (
+                      <p className="text-sm text-page-danger">{t('tokens.loadSupportedModelsFailed')}</p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-page">
+                            {t('tokens.supportedModels')} ({tokenModels[token.id]?.count || 0})
+                          </p>
+                          {tokenModels[token.id]?.restricted_by_models && (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
+                              {t('tokens.restrictedByModels')}
+                            </span>
+                          )}
+                          {tokenModels[token.id]?.restricted_by_providers && (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
+                              {t('tokens.restrictedByProviders')}
+                            </span>
+                          )}
+                        </div>
+                        {tokenModels[token.id]?.provider_names?.length > 0 && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-page-muted">{t('tokens.supportedProviders')}</span>
+                            {tokenModels[token.id].provider_names.map((name) => (
+                              <span key={name} className="px-2 py-0.5 rounded-full text-[11px] bg-page-inset text-page-secondary">
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {tokenModels[token.id]?.models?.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {tokenModels[token.id].models.map((modelName) => (
+                              <code key={modelName} className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-page-inset text-page-secondary">
+                                {modelName}
+                              </code>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm text-page-muted">{t('tokens.noSupportedModels')}</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
