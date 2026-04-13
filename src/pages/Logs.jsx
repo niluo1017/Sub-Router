@@ -20,22 +20,31 @@ function getLogOther(otherStr) {
   }
 }
 
-function formatProviderPriceSnapshot(other, symbol, rate, t) {
-  if (!other?.provider_billing_mode) return '-';
+function formatSitePriceSnapshot(other, symbol, rate, t) {
+  if (!other?.site_billing_mode) return '-';
 
   const formatUSD = (amount) => `${symbol}${(Number(amount || 0) * rate).toFixed(6)}`;
-  if (other.provider_billing_mode === 'per_call') {
-    const fixedPrice = Number(other?.provider_fixed_price || 0);
+  if (other.site_billing_mode === 'per_call') {
+    const fixedPrice = Number(other?.site_fixed_price || 0);
     if (fixedPrice <= 0) return t('按次计费');
     return `${t('按次计费')} · ${formatUSD(fixedPrice)} / ${t('pricing.perCallUnit')}`;
   }
 
-  const inputPrice = Number(other?.provider_input_price || 0);
-  const outputPrice = Number(other?.provider_output_price || 0);
+  const inputPrice = Number(other?.site_input_price || 0);
+  const outputPrice = Number(other?.site_output_price || 0);
   const parts = [t('按量计费')];
   if (inputPrice > 0) parts.push(`${t('输入')} ${formatUSD(inputPrice)} / 1M tokens`);
   if (outputPrice > 0) parts.push(`${t('输出')} ${formatUSD(outputPrice)} / 1M tokens`);
   return parts.join(' · ');
+}
+
+function formatProviderSummary(other, t) {
+  if (!other?.provider_name) return [];
+  const items = [{ key: t('供应商'), value: other.provider_name }];
+  if (other.provider_description) {
+    items.push({ key: t('供应商介绍'), value: other.provider_description });
+  }
+  return items;
 }
 
 export default function Logs() {
@@ -110,15 +119,14 @@ export default function Logs() {
       data.push({ key: t('计费方式'), value: t('订阅抵扣') });
     }
 
-    if (other.provider_name) {
-      data.push({ key: t('供应商'), value: other.provider_name });
+    const providerInfo = formatProviderSummary(other, t);
+    data.push(...providerInfo);
+
+    if (other.site_billing_mode) {
       data.push({
-        key: t('供应商定价'),
-        value: formatProviderPriceSnapshot(other, symbol, rate, t),
+        key: t('分站定价'),
+        value: formatSitePriceSnapshot(other, symbol, rate, t),
       });
-      if (other.provider_description) {
-        data.push({ key: t('供应商介绍'), value: other.provider_description });
-      }
     }
 
     return data;
