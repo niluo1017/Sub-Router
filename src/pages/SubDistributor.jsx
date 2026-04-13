@@ -88,6 +88,7 @@ export default function SubDistributor() {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
         payment_method: form.payment_method,
+        return_url: `${window.location.origin}/sub-distributor`,
       };
       if (form.payment_method === 'crypto') {
         payload.chain = form.chain;
