@@ -60,6 +60,15 @@ export default function Pricing() {
   const formatTokenPrice = (price) =>
     price != null ? `${symbol}${(Number(price) * 1000 * rate).toFixed(4)}` : '-';
 
+  const formatCacheCreationPrice = (modelName, price, price1h) => {
+    if (price == null) return '-';
+    const supportsDualCacheWindow = (modelName || '').toLowerCase().includes('claude');
+    if (supportsDualCacheWindow && price1h != null && Math.abs(Number(price1h) - Number(price)) > 1e-12) {
+      return `${t('pricing.cacheCreation5m')} ${formatTokenPrice(price)} / ${t('pricing.cacheCreation1h')} ${formatTokenPrice(price1h)}`;
+    }
+    return formatTokenPrice(price);
+  };
+
   const formatPerCallPrice = (price) =>
     price != null
       ? `${symbol}${(Number(price) * rate).toFixed(4)}/${t('pricing.perCallUnit')}`
@@ -132,13 +141,15 @@ export default function Pricing() {
           {search || vendor ? t('pricing.noMatch') : t('pricing.noModels')}
         </div>
       ) : (
-        <div className="glass-sm rounded-xl overflow-hidden">
+        <div className="glass-sm rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-page-divider">
                 <th className="text-left px-5 py-3.5 font-medium text-page-secondary">{t('pricing.model')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.inputPrice')}</th>
                 <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.outputPrice')}</th>
+                <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.cacheReadPrice')}</th>
+                <th className="text-right px-5 py-3.5 font-medium text-page-secondary">{t('pricing.cacheCreationPrice')}</th>
                 <th className="text-center px-5 py-3.5 font-medium text-page-secondary">{t('pricing.status')}</th>
               </tr>
             </thead>
@@ -153,6 +164,12 @@ export default function Pricing() {
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
                     {m.is_per_call ? formatPerCallPrice(m.fixed_price) : formatTokenPrice(m.output_price)}
+                  </td>
+                  <td className="px-5 py-3.5 text-right font-mono text-page-label">
+                    {m.is_per_call ? '-' : formatTokenPrice(m.cache_read_price)}
+                  </td>
+                  <td className="px-5 py-3.5 text-right font-mono text-page-label whitespace-nowrap">
+                    {m.is_per_call ? '-' : formatCacheCreationPrice(m.model_name, m.cache_creation_price, m.cache_creation_price_1h)}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
