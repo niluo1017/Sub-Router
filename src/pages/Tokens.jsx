@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTokens, createToken, updateToken, deleteToken, getSiteKeyGroups, getTokenSupportedModels } from '../api';
+import ConfigExporter from '../components/ConfigExporter';
 import toast from 'react-hot-toast';
 
 export default function Tokens() {
@@ -447,6 +448,10 @@ export default function Tokens() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-8">
+        <ConfigExporter tokens={tokens} />
       </div>
     </div>
   );

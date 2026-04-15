@@ -1,0 +1,678 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import { getTokenSupportedModels } from '../api';
+import { useSite } from '../context/SiteContext';
+
+const TOOLS = [
+  { id: 'claudecode', name: 'Claude Code', path: '~/.claude/settings.json' },
+  { id: 'ccswitch', name: 'CC Switch', path: 'ccswitch://v1/import' },
+  { id: 'openclaw', name: 'OpenClaw', path: '~/.openclaw/openclaw.json' },
+  { id: 'opencode', name: 'OpenCode', path: '~/.config/opencode/opencode.json' },
+  { id: 'cursor', name: 'Cursor', path: 'Settings -> Models -> OpenAI API Key' },
+  { id: 'curl', name: 'cURL', path: 'Terminal' },
+  { id: 'python', name: 'Python SDK', path: 'main.py' },
+  { id: 'anthropic', name: 'Anthropic SDK', path: 'main.py' },
+];
+
+const CCSWITCH_APPS = [
+  { id: 'codex', name: 'Codex', endpointType: 'openai' },
+  { id: 'claude', name: 'Claude Code', endpointType: 'anthropic' },
+  { id: 'opencode', name: 'OpenCode', endpointType: 'openai' },
+  { id: 'openclaw', name: 'OpenClaw', endpointType: 'openclaw' },
+];
+
+const CCSWITCH_RELEASE_URL =
+  'https://github.com/farion1231/cc-switch/releases/latest';
+const CCSWITCH_REPO_URL = 'https://github.com/farion1231/cc-switch';
+
+const ConfigExporter = ({ tokens = [] }) => {
+  const { t } = useTranslation();
+  const { site } = useSite();
+  const [selectedTokenId, setSelectedTokenId] = useState(null);
+  const [availableModels, setAvailableModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedTool, setSelectedTool] = useState('claudecode');
+  const [selectedCCSwitchApp, setSelectedCCSwitchApp] = useState('codex');
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [launchingCCSwitch, setLaunchingCCSwitch] = useState(false);
+  const [showCCSwitchDownload, setShowCCSwitchDownload] = useState(false);
+
+  const serverAddress = window.location.origin;
+
+  const selectedToken = useMemo(
+    () => tokens.find((token) => token.id === selectedTokenId) || null,
+    [tokens, selectedTokenId],
+  );
+
+  const selectedToolMeta = useMemo(
+    () => TOOLS.find((tool) => tool.id === selectedTool) || TOOLS[0],
+    [selectedTool],
+  );
+
+  useEffect(() => {
+    if (tokens.length === 0) {
+      setSelectedTokenId(null);
+      setAvailableModels([]);
+      setSelectedModel('');
+      return;
+    }
+
+    const stillExists = tokens.some((token) => token.id === selectedTokenId);
+    if (stillExists) return;
+
+    const preferred = tokens.find((token) => token.status === 1) || tokens[0];
+    setSelectedTokenId(preferred.id);
+  }, [tokens, selectedTokenId]);
+
+  useEffect(() => {
+    if (!selectedToken?.id) {
+      setAvailableModels([]);
+      setSelectedModel('');
+      return;
+    }
+
+    let cancelled = false;
+    const loadModels = async () => {
+      setLoadingModels(true);
+      setModelsError(false);
+      try {
+        const res = await getTokenSupportedModels(selectedToken.id);
+        if (cancelled) return;
+
+        if (res.data.success) {
+          const models = res.data.data?.models || [];
+          setAvailableModels(models);
+          setSelectedModel((prev) =>
+            prev && models.includes(prev) ? prev : models[0] || '',
+          );
+        } else {
+          setAvailableModels([]);
+          setSelectedModel('');
+          setModelsError(true);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setAvailableModels([]);
+        setSelectedModel('');
+        setModelsError(true);
+      }
+      if (!cancelled) {
+        setLoadingModels(false);
+      }
+    };
+
+    loadModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedToken?.id]);
+
+  const getProviderInfo = (modelName) => {
+    const lower = modelName.toLowerCase();
+    if (lower.includes('claude')) {
+      return { provider: 'anthropic', api: 'anthropic-messages' };
+    }
+    if (
+      lower.includes('gpt') ||
+      lower.includes('o1') ||
+      lower.includes('o3') ||
+      lower.includes('o4')
+    ) {
+      return { provider: 'openai', api: 'openai-chat' };
+    }
+    if (lower.includes('gemini')) {
+      return { provider: 'google', api: 'google-chat' };
+    }
+    return { provider: 'openai', api: 'openai-chat' };
+  };
+
+  const getCCSwitchEndpoint = () => {
+    const app = CCSWITCH_APPS.find(
+      (item) => item.id === selectedCCSwitchApp,
+    );
+    if (app?.endpointType === 'anthropic' || app?.endpointType === 'openclaw') {
+      return `${serverAddress}/`;
+    }
+    return `${serverAddress}/v1`;
+  };
+
+  const generateCCSwitchLink = () => {
+    if (!selectedToken || !selectedModel) return '';
+    const params = new URLSearchParams({
+      resource: 'provider',
+      app: selectedCCSwitchApp,
+      name: site?.name || window.location.hostname,
+      homepage: serverAddress,
+      endpoint: getCCSwitchEndpoint(),
+      apiKey: `sk-${selectedToken.key}`,
+      model: selectedModel,
+      enabled: 'true',
+      notes: `${site?.name || window.location.hostname} · ${selectedModel}`,
+    });
+    return `ccswitch://v1/import?${params.toString()}`;
+  };
+
+  const generateConfig = () => {
+    if (!selectedToken || !selectedModel) return '';
+
+    const apiKey = `sk-${selectedToken.key}`;
+
+    switch (selectedTool) {
+      case 'claudecode':
+        return `{
+  "env": {
+    "ANTHROPIC_API_KEY": "${apiKey}",
+    "ANTHROPIC_BASE_URL": "${serverAddress}/",
+    "ANTHROPIC_MODEL": "${selectedModel}"
+  }
+}`;
+      case 'ccswitch':
+        return generateCCSwitchLink();
+      case 'openclaw': {
+        const info = getProviderInfo(selectedModel);
+        return `{
+  "provider": "${info.provider}",
+  "base_url": "${serverAddress}/",
+  "api": "${info.api}",
+  "api_key": "${apiKey}",
+  "model": {
+    "id": "${selectedModel}",
+    "name": "${selectedModel}"
+  }
+}`;
+      }
+      case 'opencode':
+        return `{
+  "provider": {
+    "openai": {
+      "options": {
+        "baseURL": "${serverAddress}/v1",
+        "apiKey": "${apiKey}"
+      },
+      "models": {
+        "${selectedModel}": {
+          "name": "${selectedModel}",
+          "options": {
+            "store": false
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}`;
+      case 'cursor':
+        return `API Key: ${apiKey}
+Base URL: ${serverAddress}/v1
+Model: ${selectedModel}`;
+      case 'curl':
+        return `curl ${serverAddress}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -d '{
+    "model": "${selectedModel}",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'`;
+      case 'python':
+        return `from openai import OpenAI
+
+client = OpenAI(
+    api_key="${apiKey}",
+    base_url="${serverAddress}/v1"
+)
+
+response = client.chat.completions.create(
+    model="${selectedModel}",
+    messages=[
+        {"role": "user", "content": "Hello!"}
+    ]
+)
+
+print(response.choices[0].message.content)`;
+      case 'anthropic':
+        return `import anthropic
+
+client = anthropic.Anthropic(
+    api_key="${apiKey}",
+    base_url="${serverAddress}/"
+)
+
+message = client.messages.create(
+    model="${selectedModel}",
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "Hello!"}
+    ]
+)
+
+print(message.content[0].text)`;
+      default:
+        return '';
+    }
+  };
+
+  const getFilename = () => {
+    switch (selectedTool) {
+      case 'curl':
+        return 'api-call.sh';
+      case 'python':
+      case 'anthropic':
+        return 'main.py';
+      case 'cursor':
+        return 'cursor-config.txt';
+      default:
+        return (
+          selectedToolMeta.path.split('/').pop() || `${selectedToolMeta.id}.json`
+        );
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  };
+
+  const handleCopy = async () => {
+    const config = generateConfig();
+    if (!config) return;
+    await copyToClipboard(config);
+    setCopied(true);
+    toast.success(
+      t(selectedTool === 'ccswitch' ? 'config.importLinkCopied' : 'config.copied'),
+    );
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const config = generateConfig();
+    if (!config) return;
+
+    const blob = new Blob([config], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = getFilename();
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(t('config.downloaded'));
+  };
+
+  const handleImportCCSwitch = () => {
+    const deeplink = generateCCSwitchLink();
+    if (!deeplink) return;
+
+    setShowCCSwitchDownload(false);
+    setLaunchingCCSwitch(true);
+
+    let dismissed = false;
+    let timerId = null;
+
+    const cleanup = () => {
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timerId) {
+        window.clearTimeout(timerId);
+      }
+    };
+
+    const handleSuccess = () => {
+      if (dismissed) return;
+      dismissed = true;
+      cleanup();
+      setLaunchingCCSwitch(false);
+    };
+
+    const handleBlur = () => {
+      handleSuccess();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleSuccess();
+      }
+    };
+
+    window.addEventListener('blur', handleBlur);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    timerId = window.setTimeout(() => {
+      if (dismissed) return;
+      cleanup();
+      setLaunchingCCSwitch(false);
+      setShowCCSwitchDownload(true);
+    }, 1500);
+
+    window.location.href = deeplink;
+  };
+
+  const config = generateConfig();
+
+  if (tokens.length === 0) {
+    return (
+      <div className="glass rounded-2xl p-6 text-center">
+        <svg
+          className="w-8 h-8 mx-auto mb-3 text-page-muted"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+          />
+        </svg>
+        <p className="text-sm text-page-secondary mb-1">
+          {t('config.noKeyPrompt')}
+        </p>
+        <p className="text-xs text-page-muted">{t('config.noKeyDesc')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="glass rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-page-divider">
+          <h4 className="font-semibold text-sm text-page flex items-center gap-2">
+            <svg
+              className="w-4 h-4 text-brand-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            {t('config.title')}
+          </h4>
+          <p className="text-xs text-page-muted mt-1">{t('config.subtitle')}</p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="flex items-center gap-2 text-xs font-medium text-page-label mb-2">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
+              </svg>
+              {t('config.selectKey')}
+            </label>
+            <select
+              value={selectedToken?.id || ''}
+              onChange={(e) => setSelectedTokenId(Number(e.target.value))}
+              className="input"
+            >
+              {tokens.map((token) => (
+                <option key={token.id} value={token.id}>
+                  {token.name} (sk-{token.key.substring(0, 16)}...)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-xs font-medium text-page-label mb-2">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
+              {t('config.selectModel')}
+            </label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="input"
+              disabled={loadingModels || availableModels.length === 0}
+            >
+              {loadingModels ? (
+                <option value="">{t('config.loadingModels')}</option>
+              ) : availableModels.length > 0 ? (
+                availableModels.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))
+              ) : (
+                <option value="">
+                  {modelsError
+                    ? t('tokens.loadSupportedModelsFailed')
+                    : t('tokens.noSupportedModels')}
+                </option>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-page-label mb-2 block">
+              {t('config.selectTool')}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {TOOLS.map((tool) => (
+                <button
+                  key={tool.id}
+                  onClick={() => setSelectedTool(tool.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    selectedTool === tool.id
+                      ? 'bg-brand-500 text-white shadow-sm'
+                      : 'surface text-page-secondary hover:bg-page-surface-hover'
+                  }`}
+                >
+                  {tool.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {selectedTool === 'ccswitch' && (
+            <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-xs font-medium text-page-label">
+                    {t('config.selectCCSwitchApp')}
+                  </p>
+                  <p className="text-xs text-page-muted mt-1">
+                    {t('config.ccswitchHint')}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {CCSWITCH_APPS.map((app) => (
+                    <button
+                      key={app.id}
+                      onClick={() => setSelectedCCSwitchApp(app.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        selectedCCSwitchApp === app.id
+                          ? 'bg-brand-500 text-white shadow-sm'
+                          : 'bg-transparent border border-page-divider text-page-secondary hover:bg-page-surface-hover'
+                      }`}
+                    >
+                      {app.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-page-divider">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-page-inset/70">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+              </div>
+              <span className="text-xs text-page-muted ml-1 truncate">
+                {selectedToolMeta.path}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopy}
+                disabled={!config}
+                className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
+                title={t(
+                  selectedTool === 'ccswitch'
+                    ? 'config.copyImportLink'
+                    : 'config.copy',
+                )}
+              >
+                {copied ? (
+                  <svg
+                    className="w-3.5 h-3.5 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                )}
+              </button>
+              {selectedTool === 'ccswitch' ? (
+                <button
+                  onClick={handleImportCCSwitch}
+                  disabled={!config || launchingCCSwitch}
+                  className="px-3 py-1 rounded-lg bg-brand-500 text-white text-xs font-medium hover:bg-brand-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('config.importToCCSwitch')}
+                >
+                  {launchingCCSwitch
+                    ? t('config.launchingCCSwitch')
+                    : t('config.importToCCSwitch')}
+                </button>
+              ) : (
+                <button
+                  onClick={handleDownload}
+                  disabled={!config}
+                  className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('config.download')}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          <pre className="p-4 text-xs leading-relaxed overflow-x-auto max-h-72 font-mono text-page whitespace-pre-wrap break-all">
+            <code>{config || t('tokens.noSupportedModels')}</code>
+          </pre>
+        </div>
+      </div>
+
+      {showCCSwitchDownload && (
+        <div
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowCCSwitchDownload(false)}
+        >
+          <div
+            className="glass rounded-2xl p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-page mb-2">
+              {t('config.ccswitchNotInstalledTitle')}
+            </h3>
+            <p className="text-sm text-page-secondary mb-5">
+              {t('config.ccswitchNotInstalledDesc')}
+            </p>
+            <div className="space-y-3">
+              <a
+                href={CCSWITCH_RELEASE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary w-full text-center block"
+              >
+                {t('config.downloadCCSwitch')}
+              </a>
+              <a
+                href={CCSWITCH_REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary w-full text-center block"
+              >
+                {t('config.openCCSwitchRepo')}
+              </a>
+            </div>
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={() => setShowCCSwitchDownload(false)}
+                className="btn-secondary"
+              >
+                {t('topup.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default ConfigExporter;
