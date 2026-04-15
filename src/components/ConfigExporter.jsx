@@ -6,7 +6,6 @@ import { useSite } from '../context/SiteContext';
 
 const TOOLS = [
   { id: 'claudecode', name: 'Claude Code', path: '~/.claude/settings.json' },
-  { id: 'ccswitch', name: 'CC Switch', path: 'ccswitch://v1/import' },
   { id: 'openclaw', name: 'OpenClaw', path: '~/.openclaw/openclaw.json' },
   { id: 'opencode', name: 'OpenCode', path: '~/.config/opencode/opencode.json' },
   { id: 'cursor', name: 'Cursor', path: 'Settings -> Models -> OpenAI API Key' },
@@ -287,15 +286,37 @@ print(message.content[0].text)`;
     }
   };
 
+  const getSelectedToolBaseUrl = () => {
+    if (
+      selectedTool === 'claudecode' ||
+      selectedTool === 'anthropic' ||
+      selectedTool === 'openclaw'
+    ) {
+      return `${serverAddress}/`;
+    }
+    return `${serverAddress}/v1`;
+  };
+
+  const handleCopyValue = async (text, successKey = 'config.copied') => {
+    if (!text) return;
+    await copyToClipboard(text);
+    toast.success(t(successKey));
+  };
+
   const handleCopy = async () => {
     const config = generateConfig();
     if (!config) return;
     await copyToClipboard(config);
     setCopied(true);
-    toast.success(
-      t(selectedTool === 'ccswitch' ? 'config.importLinkCopied' : 'config.copied'),
-    );
+    toast.success(t('config.copied'));
     window.setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyCCSwitchLink = async () => {
+    const deeplink = generateCCSwitchLink();
+    if (!deeplink) return;
+    await copyToClipboard(deeplink);
+    toast.success(t('config.importLinkCopied'));
   };
 
   const handleDownload = () => {
@@ -361,6 +382,7 @@ print(message.content[0].text)`;
   };
 
   const config = generateConfig();
+  const ccSwitchLink = generateCCSwitchLink();
 
   if (tokens.length === 0) {
     return (
@@ -481,6 +503,78 @@ print(message.content[0].text)`;
             </select>
           </div>
 
+          <div className="rounded-xl border border-page-divider bg-page-surface/50 px-4 py-4 space-y-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-page">
+                  {t('config.apiUrlTitle')}
+                </p>
+                <p className="text-xs text-page-muted mt-1">
+                  {t('config.apiUrlHint')}
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  handleCopyValue(
+                    getSelectedToolBaseUrl(),
+                    'config.apiUrlCopied',
+                  )
+                }
+                className="btn-secondary px-4 py-2"
+              >
+                {t('config.copyCurrentApiUrl')}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="rounded-lg bg-page-inset/60 px-3 py-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="text-[11px] font-medium text-page-label">
+                    {t('config.currentToolApiUrl')}
+                  </span>
+                  <code className="text-[11px] text-page-muted break-all">
+                    {getSelectedToolBaseUrl()}
+                  </code>
+                </div>
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-2">
+                <button
+                  onClick={() =>
+                    handleCopyValue(
+                      `${serverAddress}/v1`,
+                      'config.apiUrlCopied',
+                    )
+                  }
+                  className="rounded-lg border border-page-divider bg-page-inset/40 px-3 py-2 text-left hover:bg-page-surface-hover transition-colors"
+                >
+                  <div className="text-[11px] font-medium text-page-label">
+                    {t('config.openaiApiUrl')}
+                  </div>
+                  <code className="block mt-1 text-[11px] text-page-muted break-all">
+                    {serverAddress}/v1
+                  </code>
+                </button>
+                <button
+                  onClick={() =>
+                    handleCopyValue(
+                      `${serverAddress}/`,
+                      'config.apiUrlCopied',
+                    )
+                  }
+                  className="rounded-lg border border-page-divider bg-page-inset/40 px-3 py-2 text-left hover:bg-page-surface-hover transition-colors"
+                >
+                  <div className="text-[11px] font-medium text-page-label">
+                    {t('config.anthropicApiUrl')}
+                  </div>
+                  <code className="block mt-1 text-[11px] text-page-muted break-all">
+                    {serverAddress}/
+                  </code>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-medium text-page-label mb-2 block">
               {t('config.selectTool')}
@@ -502,35 +596,69 @@ print(message.content[0].text)`;
             </div>
           </div>
 
-          {selectedTool === 'ccswitch' && (
-            <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-3">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <p className="text-xs font-medium text-page-label">
-                    {t('config.selectCCSwitchApp')}
-                  </p>
-                  <p className="text-xs text-page-muted mt-1">
-                    {t('config.ccswitchHint')}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {CCSWITCH_APPS.map((app) => (
-                    <button
-                      key={app.id}
-                      onClick={() => setSelectedCCSwitchApp(app.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        selectedCCSwitchApp === app.id
-                          ? 'bg-brand-500 text-white shadow-sm'
-                          : 'bg-transparent border border-page-divider text-page-secondary hover:bg-page-surface-hover'
-                      }`}
-                    >
-                      {app.name}
-                    </button>
-                  ))}
-                </div>
+          <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-4 space-y-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-page">
+                  {t('config.ccswitchTitle')}
+                </p>
+                <p className="text-xs text-page-muted mt-1">
+                  {t('config.ccswitchHint')}
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-brand-500/15 text-brand-300">
+                CC Switch
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-page-label mb-2">
+                {t('config.selectCCSwitchApp')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CCSWITCH_APPS.map((app) => (
+                  <button
+                    key={app.id}
+                    onClick={() => setSelectedCCSwitchApp(app.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      selectedCCSwitchApp === app.id
+                        ? 'bg-brand-500 text-white shadow-sm'
+                        : 'bg-transparent border border-page-divider text-page-secondary hover:bg-page-surface-hover'
+                    }`}
+                  >
+                    {app.name}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleImportCCSwitch}
+                disabled={!ccSwitchLink || launchingCCSwitch}
+                className="btn-primary flex-1 min-w-[220px]"
+                title={t('config.importToCCSwitch')}
+              >
+                {launchingCCSwitch
+                  ? t('config.launchingCCSwitch')
+                  : t('config.importToCCSwitch')}
+              </button>
+              <button
+                onClick={handleCopyCCSwitchLink}
+                disabled={!ccSwitchLink}
+                className="btn-secondary px-4 py-2.5"
+                title={t('config.copyImportLink')}
+              >
+                {t('config.copyImportLink')}
+              </button>
+            </div>
+
+            <div className="rounded-lg bg-page-inset/60 px-3 py-2">
+              <code className="text-[11px] leading-relaxed text-page-muted break-all">
+                {ccSwitchLink}
+              </code>
+            </div>
+          </div>
         </div>
 
         <div className="border-t border-page-divider">
@@ -586,39 +714,26 @@ print(message.content[0].text)`;
                   </svg>
                 )}
               </button>
-              {selectedTool === 'ccswitch' ? (
-                <button
-                  onClick={handleImportCCSwitch}
-                  disabled={!config || launchingCCSwitch}
-                  className="px-3 py-1 rounded-lg bg-brand-500 text-white text-xs font-medium hover:bg-brand-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={t('config.importToCCSwitch')}
+              <button
+                onClick={handleDownload}
+                disabled={!config}
+                className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
+                title={t('config.download')}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {launchingCCSwitch
-                    ? t('config.launchingCCSwitch')
-                    : t('config.importToCCSwitch')}
-                </button>
-              ) : (
-                <button
-                  onClick={handleDownload}
-                  disabled={!config}
-                  className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={t('config.download')}
-                >
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </button>
-              )}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
           <pre className="p-4 text-xs leading-relaxed overflow-x-auto max-h-72 font-mono text-page whitespace-pre-wrap break-all">

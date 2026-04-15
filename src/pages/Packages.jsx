@@ -69,11 +69,14 @@ export default function Packages() {
       if (res.data.success) {
         toast.success(t('packages.subscribedSuccess'));
         setConfirmPkg(null);
-        await refreshUser();
-        // Reload subscriptions
-        getActiveSubscriptions()
-          .then((r) => { if (r.data.success) setActiveSubs(r.data.data || []); })
-          .catch(() => {});
+        // Background refresh errors shouldn't override a successful purchase toast.
+        await refreshUser({ skipErrorHandler: true }).catch(() => null);
+        const subsRes = await getActiveSubscriptions({
+          skipErrorHandler: true,
+        }).catch(() => null);
+        if (subsRes?.data?.success) {
+          setActiveSubs(subsRes.data.data || []);
+        }
       } else {
         toast.error(res.data.message || t('common.requestFailed'));
       }
