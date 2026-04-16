@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { getTokenSupportedModels } from '../api';
@@ -25,6 +25,145 @@ const CCSWITCH_RELEASE_URL =
   'https://github.com/farion1231/cc-switch/releases/latest';
 const CCSWITCH_REPO_URL = 'https://github.com/farion1231/cc-switch';
 
+function ThemedSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+  renderValue,
+  renderOption,
+  emptyLabel,
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+    }
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const displayLabel = selectedOption
+    ? (renderValue ? renderValue(selectedOption) : selectedOption.label)
+    : placeholder;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        className="input flex items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+      >
+        <span
+          className={`block truncate ${
+            selectedOption ? 'text-page' : 'text-page-muted'
+          }`}
+        >
+          {displayLabel}
+        </span>
+        <svg
+          className={`h-4 w-4 flex-shrink-0 text-page-muted transition-transform ${
+            open ? 'rotate-180' : ''
+          }`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-page-divider bg-[color:var(--page-card-bg)] shadow-2xl backdrop-blur-xl">
+          <div className="max-h-72 overflow-y-auto p-1.5">
+            {options.length > 0 ? (
+              options.map((option) => {
+                const selected = option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                      selected
+                        ? 'bg-brand-500/15 text-page'
+                        : 'text-page-secondary hover:bg-page-surface-hover hover:text-page'
+                    }`}
+                    onClick={() => {
+                      onChange(option.value);
+                      setOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={selected}
+                  >
+                    <span className="min-w-0 flex-1">
+                      {renderOption ? renderOption(option) : option.label}
+                    </span>
+                    {selected && (
+                      <svg
+                        className="h-4 w-4 flex-shrink-0 text-brand-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-3 py-2 text-sm text-page-muted">
+                {emptyLabel}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const ConfigExporter = ({ tokens = [] }) => {
   const { t } = useTranslation();
   const { site } = useSite();
@@ -49,6 +188,23 @@ const ConfigExporter = ({ tokens = [] }) => {
   const selectedToolMeta = useMemo(
     () => TOOLS.find((tool) => tool.id === selectedTool) || TOOLS[0],
     [selectedTool],
+  );
+  const tokenOptions = useMemo(
+    () =>
+      tokens.map((token) => ({
+        value: token.id,
+        label: `${token.name} (sk-${token.key.substring(0, 16)}...)`,
+        token,
+      })),
+    [tokens],
+  );
+  const modelOptions = useMemo(
+    () =>
+      availableModels.map((model) => ({
+        value: model,
+        label: model,
+      })),
+    [availableModels],
   );
 
   useEffect(() => {
@@ -449,17 +605,13 @@ print(message.content[0].text)`;
               </svg>
               {t('config.selectKey')}
             </label>
-            <select
-              value={selectedToken?.id || ''}
-              onChange={(e) => setSelectedTokenId(Number(e.target.value))}
-              className="input"
-            >
-              {tokens.map((token) => (
-                <option key={token.id} value={token.id}>
-                  {token.name} (sk-{token.key.substring(0, 16)}...)
-                </option>
-              ))}
-            </select>
+            <ThemedSelect
+              value={selectedToken?.id ?? null}
+              onChange={setSelectedTokenId}
+              options={tokenOptions}
+              placeholder={t('config.selectKey')}
+              emptyLabel={t('config.noKeyDesc')}
+            />
           </div>
 
           <div>
@@ -479,28 +631,22 @@ print(message.content[0].text)`;
               </svg>
               {t('config.selectModel')}
             </label>
-            <select
+            <ThemedSelect
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="input"
-              disabled={loadingModels || availableModels.length === 0}
-            >
-              {loadingModels ? (
-                <option value="">{t('config.loadingModels')}</option>
-              ) : availableModels.length > 0 ? (
-                availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))
-              ) : (
-                <option value="">
-                  {modelsError
-                    ? t('tokens.loadSupportedModelsFailed')
-                    : t('tokens.noSupportedModels')}
-                </option>
-              )}
-            </select>
+              onChange={setSelectedModel}
+              options={modelOptions}
+              placeholder={
+                loadingModels
+                  ? t('config.loadingModels')
+                  : t('config.selectModel')
+              }
+              disabled={loadingModels || modelOptions.length === 0}
+              emptyLabel={
+                modelsError
+                  ? t('tokens.loadSupportedModelsFailed')
+                  : t('tokens.noSupportedModels')
+              }
+            />
           </div>
 
           <div className="rounded-xl border border-page-divider bg-page-surface/50 px-4 py-4 space-y-3">
