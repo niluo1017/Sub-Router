@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { createSubDistributorOrder, getSubDistributorInfo } from '../api';
 import { useAuth } from '../context/AuthContext';
-import { useSite } from '../context/SiteContext';
+import { useSite, useCurrency } from '../context/SiteContext';
 
 function submitEpayForm(resData) {
   const params = resData.data;
@@ -33,6 +33,7 @@ export default function SubDistributor() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { site } = useSite();
+  const { symbol, fmtCNY } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [subInfo, setSubInfo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -216,7 +217,7 @@ export default function SubDistributor() {
 
               <button type="submit" disabled={submitting} className="btn-primary w-full justify-center flex items-center gap-2">
                 {submitting && <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
-                {t('subDist.payAndOpen', { price: Number(subInfo?.price || 0).toFixed(2) })}
+                {t('subDist.payAndOpen', { symbol, price: Number(subInfo?.price || 0).toFixed(2) })}
               </button>
 
               <p className="text-xs text-page-muted">
@@ -247,7 +248,7 @@ export default function SubDistributor() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-page-secondary">{t('subDist.openPrice')}</span>
-                <span className="text-2xl font-bold text-page">¥{Number(subInfo?.price || 0).toFixed(2)}</span>
+                <span className="text-2xl font-bold text-page">{fmtCNY(subInfo?.price || 0)}</span>
               </div>
               <p className="text-sm text-page-secondary leading-6">{t('subDist.priceSummary')}</p>
             </div>
