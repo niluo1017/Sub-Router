@@ -37,12 +37,12 @@ function getSitePricingDetails(other, symbol, rate, t) {
 
   if (other.site_billing_mode === 'per_call') {
     return [
-      { key: t('分站定价'), value: t('按次计费') },
+      { key: t('定价方式'), value: t('按次计费') },
       { key: t('价格'), value: formatAmount(symbol, rate, other.site_fixed_price) },
     ];
   }
 
-  const details = [{ key: t('分站定价'), value: t('按量计费') }];
+  const details = [{ key: t('定价方式'), value: t('按量计费') }];
   if (Number(other.site_input_price || 0) > 0) {
     details.push({
       key: t('输入价格'),
