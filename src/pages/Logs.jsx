@@ -32,6 +32,20 @@ function getProviderSummary(other) {
   return other.provider_name;
 }
 
+function getBillingSourceLabel(other, t) {
+  if (!other?.billing_source) return '';
+  if (other.billing_source === 'subscription') {
+    if (other.subscription_source === 'dist_package') return t('分站套餐');
+    if (other.subscription_source === 'order') return t('主站订阅');
+    if (other.subscription_source === 'admin') return t('后台订阅');
+    return t('订阅');
+  }
+  if (other.billing_source === 'wallet') {
+    return t('钱包');
+  }
+  return '';
+}
+
 function getSitePricingDetails(other, symbol, rate, t) {
   if (!other?.site_billing_mode) return [];
 
@@ -127,10 +141,15 @@ export default function Logs() {
     if (!other) return [];
 
     const data = [];
+    const billingSourceLabel = getBillingSourceLabel(other, t);
 
     const providerSummary = getProviderSummary(other);
     if (providerSummary) {
       data.push({ key: t('供应商'), value: providerSummary });
+    }
+
+    if (billingSourceLabel) {
+      data.push({ key: t('实际扣费来源'), value: billingSourceLabel });
     }
 
     data.push(...getSitePricingDetails(other, symbol, rate, t));
@@ -162,11 +181,6 @@ export default function Logs() {
     if (log.is_stream && other.frt) {
       const frtSeconds = (parseFloat(other.frt) / 1000.0).toFixed(1);
       data.push({ key: t('首字时间'), value: `${frtSeconds}s` });
-    }
-
-    // Billing source
-    if (other.billing_source === 'subscription') {
-      data.push({ key: t('计费方式'), value: t('订阅抵扣') });
     }
 
     return data;
@@ -239,6 +253,7 @@ export default function Logs() {
                     const expandData = getExpandData(log);
                     const hasExpandData = expandData.length > 0;
                     const isExpanded = expandedRows[log.id];
+                    const billingSourceLabel = getBillingSourceLabel(getLogOther(log.other), t);
                     return (
                       <React.Fragment key={i}>
                         <tr
@@ -257,8 +272,17 @@ export default function Logs() {
                           <td className="px-4 py-3 text-xs text-page-secondary">{log.token_name || '-'}</td>
                           <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.prompt_tokens?.toLocaleString() || '0'}</td>
                           <td className="px-4 py-3 text-right font-mono text-xs text-page-label">{log.completion_tokens?.toLocaleString() || '0'}</td>
-                          <td className="px-4 py-3 text-right font-mono text-xs text-page-warning">
-                            {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex flex-col items-end">
+                              <span className="font-mono text-xs text-page-warning">
+                                {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
+                              </span>
+                              {billingSourceLabel && (
+                                <span className="text-[10px] text-page-secondary mt-1">
+                                  {billingSourceLabel}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-right text-xs text-page-secondary">
                             {log.use_time > 0 ? `${log.use_time}s` : '-'}
@@ -291,6 +315,7 @@ export default function Logs() {
                 const expandData = getExpandData(log);
                 const hasExpandData = expandData.length > 0;
                 const isExpanded = expandedRows[log.id];
+                const billingSourceLabel = getBillingSourceLabel(getLogOther(log.other), t);
                 return (
                   <div key={i} className="px-4 py-3 space-y-1.5">
                     <div
@@ -303,9 +328,16 @@ export default function Logs() {
                         )}
                         <span className="font-mono text-xs text-page font-medium">{log.model_name || '-'}</span>
                       </div>
-                      <span className="font-mono text-xs text-page-warning">
-                        {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono text-xs text-page-warning">
+                          {log.quota > 0 ? `${symbol}${(log.quota / Q * rate).toFixed(6)}` : '-'}
+                        </span>
+                        {billingSourceLabel && (
+                          <span className="text-[10px] text-page-secondary mt-1">
+                            {billingSourceLabel}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-page-secondary">
                       <span>{formatTime(log.created_at)}</span>
