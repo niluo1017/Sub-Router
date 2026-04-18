@@ -79,7 +79,7 @@ function ThemedSelect({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className="input flex items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
+        className="input input-solid flex items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
         onClick={() => !disabled && setOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -110,8 +110,8 @@ function ThemedSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-page-divider bg-[color:var(--page-card-bg)] shadow-2xl backdrop-blur-xl">
-          <div className="max-h-72 overflow-y-auto p-1.5">
+        <div className="select-panel absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl">
+          <div className="max-h-72 overflow-y-auto p-1.5" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
                 const selected = option.value === value;
@@ -265,31 +265,36 @@ const ConfigExporter = ({ tokens = [] }) => {
     };
   }, [selectedToken?.id]);
 
-  const getProviderInfo = (modelName) => {
+  const getModelConnectionPreset = (modelName = '') => {
     const lower = modelName.toLowerCase();
     if (lower.includes('claude')) {
-      return { provider: 'anthropic', api: 'anthropic-messages' };
+      return {
+        family: 'anthropic',
+        baseUrl: serverAddress,
+        openclawApi: 'anthropic-messages',
+        openclawProviderId: 'subrouter-anthropic',
+        opencodeProviderId: 'anthropic',
+      };
     }
-    if (
-      lower.includes('gpt') ||
-      lower.includes('o1') ||
-      lower.includes('o3') ||
-      lower.includes('o4')
-    ) {
-      return { provider: 'openai', api: 'openai-chat' };
-    }
-    if (lower.includes('gemini')) {
-      return { provider: 'google', api: 'google-chat' };
-    }
-    return { provider: 'openai', api: 'openai-chat' };
+    return {
+      family: 'openai',
+      baseUrl: `${serverAddress}/v1`,
+      openclawApi: 'openai-completions',
+      openclawProviderId: 'subrouter-openai',
+      opencodeProviderId: 'openai',
+    };
   };
 
   const getCCSwitchEndpoint = () => {
     const app = CCSWITCH_APPS.find(
       (item) => item.id === selectedCCSwitchApp,
     );
-    if (app?.endpointType === 'anthropic' || app?.endpointType === 'openclaw') {
-      return `${serverAddress}/`;
+    const preset = getModelConnectionPreset(selectedModel);
+    if (app?.endpointType === 'anthropic') {
+      return serverAddress;
+    }
+    if (app?.id === 'openclaw' || app?.id === 'opencode') {
+      return preset.baseUrl;
     }
     return `${serverAddress}/v1`;
   };
@@ -320,31 +325,55 @@ const ConfigExporter = ({ tokens = [] }) => {
         return `{
   "env": {
     "ANTHROPIC_API_KEY": "${apiKey}",
-    "ANTHROPIC_BASE_URL": "${serverAddress}/",
+    "ANTHROPIC_BASE_URL": "${serverAddress}",
     "ANTHROPIC_MODEL": "${selectedModel}"
   }
 }`;
       case 'ccswitch':
         return generateCCSwitchLink();
       case 'openclaw': {
-        const info = getProviderInfo(selectedModel);
+        const preset = getModelConnectionPreset(selectedModel);
+        const modelRef = `${preset.openclawProviderId}/${selectedModel}`;
         return `{
-  "provider": "${info.provider}",
-  "base_url": "${serverAddress}/",
-  "api": "${info.api}",
-  "api_key": "${apiKey}",
-  "model": {
-    "id": "${selectedModel}",
-    "name": "${selectedModel}"
+  "agents": {
+    "defaults": {
+      "models": {
+        "${modelRef}": {
+          "alias": "${selectedModel}"
+        }
+      },
+      "model": {
+        "primary": "${modelRef}"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "${preset.openclawProviderId}": {
+        "baseUrl": "${preset.baseUrl}",
+        "apiKey": "${apiKey}",
+        "api": "${preset.openclawApi}",
+        "models": [
+          {
+            "id": "${selectedModel}",
+            "name": "${selectedModel}"
+          }
+        ]
+      }
+    }
   }
 }`;
       }
-      case 'opencode':
+      case 'opencode': {
+        const preset = getModelConnectionPreset(selectedModel);
+        const modelRef = `${preset.opencodeProviderId}/${selectedModel}`;
         return `{
+  "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "openai": {
+    "${preset.opencodeProviderId}": {
       "options": {
-        "baseURL": "${serverAddress}/v1",
+        "baseURL": "${preset.baseUrl}",
         "apiKey": "${apiKey}"
       },
       "models": {
@@ -357,8 +386,9 @@ const ConfigExporter = ({ tokens = [] }) => {
       }
     }
   },
-  "$schema": "https://opencode.ai/config.json"
+  "model": "${modelRef}"
 }`;
+      }
       case 'cursor':
         return `API Key: ${apiKey}
 Base URL: ${serverAddress}/v1
@@ -394,7 +424,7 @@ print(response.choices[0].message.content)`;
 
 client = anthropic.Anthropic(
     api_key="${apiKey}",
-    base_url="${serverAddress}/"
+    base_url="${serverAddress}"
 )
 
 message = client.messages.create(
@@ -443,12 +473,12 @@ print(message.content[0].text)`;
   };
 
   const getSelectedToolBaseUrl = () => {
-    if (
-      selectedTool === 'claudecode' ||
-      selectedTool === 'anthropic' ||
-      selectedTool === 'openclaw'
-    ) {
-      return `${serverAddress}/`;
+    const preset = getModelConnectionPreset(selectedModel);
+    if (selectedTool === 'claudecode' || selectedTool === 'anthropic') {
+      return serverAddress;
+    }
+    if (selectedTool === 'openclaw' || selectedTool === 'opencode') {
+      return preset.baseUrl;
     }
     return `${serverAddress}/v1`;
   };
