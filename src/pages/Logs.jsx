@@ -35,7 +35,7 @@ function getProviderSummary(other) {
 function getBillingSourceLabel(other, t) {
   if (!other?.billing_source) return '';
   if (other.billing_source === 'subscription') {
-    if (other.subscription_source === 'dist_package') return t('分站套餐');
+    if (other.subscription_source === 'dist_package') return t('dashboard.packages');
     if (other.subscription_source === 'order') return t('主站订阅');
     if (other.subscription_source === 'admin') return t('后台订阅');
     return t('订阅');

@@ -57,6 +57,7 @@ export const getSiteModels = () => api.get('/api/dist/site/models');
 export const getSitePricing = () => api.get('/api/dist/site/pricing');
 export const getSitePackages = () => api.get('/api/dist/site/packages');
 export const getSiteKeyGroups = () => api.get('/api/dist/site/key-groups');
+export const getSiteKeyGroupPricing = (id) => api.get(`/api/dist/site/key-groups/${id}/pricing`);
 export const getSubDistributorInfo = () => api.get('/api/dist/site/sub-distributor/info');
 
 // ===== Auth =====
