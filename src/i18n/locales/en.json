@@ -244,6 +244,7 @@
     "pricing.cacheCreationPrice": "Cache creation / 1M tokens",
     "pricing.cacheCreation5m": "5m",
     "pricing.cacheCreation1h": "1h",
+    "pricing.cacheDiscountShort": "Cache discount",
     "pricing.perCall": "Per call",
     "pricing.perCallUnit": "call",
     "pricing.status": "Status",

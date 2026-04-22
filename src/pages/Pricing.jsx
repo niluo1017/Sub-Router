@@ -3,6 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { getSiteModels } from '../api';
 import { useCurrency } from '../context/SiteContext';
 
+function formatDiscountRateLabel(value) {
+  if (value == null || Number.isNaN(Number(value))) return null;
+  return `${Number(value).toFixed(Number(value) >= 100 ? 0 : 1)}%`;
+}
+
+function getModelCacheDiscountBadge(model) {
+  const readRate = Number(model?.cache_read_discount_rate);
+  const inputPrice = Number(model?.input_price);
+  const cacheReadPrice = Number(model?.cache_read_price);
+  if (!Number.isFinite(readRate) || readRate <= 0) return null;
+  if (!Number.isFinite(inputPrice) || !Number.isFinite(cacheReadPrice) || !(cacheReadPrice < inputPrice - 1e-12)) return null;
+  return formatDiscountRateLabel(readRate);
+}
+
 export default function Pricing() {
   const { t } = useTranslation();
   const { symbol, rate } = useCurrency();
@@ -157,7 +171,14 @@ export default function Pricing() {
               {filtered.map((m, i) => (
                 <tr key={m.model_name || i} className="border-b border-page-divider last:border-0 hover:bg-page-surface transition-colors">
                   <td className="px-5 py-3.5">
-                    <span className="font-mono text-page">{m.display_name || m.model_name}</span>
+                    <div className="flex items-center gap-2 justify-between">
+                      <span className="font-mono text-page">{m.display_name || m.model_name}</span>
+                      {!m.is_per_call && getModelCacheDiscountBadge(m) && (
+                        <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[11px] font-medium">
+                          {t('pricing.cacheDiscountShort')} {getModelCacheDiscountBadge(m)}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-5 py-3.5 text-right font-mono text-page-label">
                     {m.is_per_call ? t('pricing.perCall') : formatTokenPrice(m.input_price)}

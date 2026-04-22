@@ -747,7 +747,14 @@ function GroupPricingModal({
                     <tr key={`${item.model_name}:${item.billing_type}`} className="border-b border-page-divider last:border-0 align-top">
                       <td className="px-4 py-3.5">
                         <div className="min-w-0">
-                          <div className="font-medium text-page">{item.display_name || item.model_name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-page">{item.display_name || item.model_name}</div>
+                            {item.billing_type !== 'per_call' && shouldShowGroupDiscountBadge(item) && formatDiscountRateRange(item.cache_read_discount_rate_min, item.cache_read_discount_rate_max) && (
+                              <span className="inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[11px] font-medium">
+                                {t('pricing.cacheDiscountShort')} {formatDiscountRateRange(item.cache_read_discount_rate_min, item.cache_read_discount_rate_max)}
+                              </span>
+                            )}
+                          </div>
                           {(item.display_name || item.model_name) !== item.model_name && (
                             <div className="text-xs text-page-muted font-mono mt-1">{item.model_name}</div>
                           )}
@@ -818,6 +825,30 @@ function formatGroupPriceRange(min, max, symbol, rate, perCall, t) {
     return `${lowText}${suffix}`;
   }
   return `${lowText} - ${highText}${suffix}`;
+}
+
+function formatDiscountRateRange(min, max) {
+  if (min == null && max == null) {
+    return null;
+  }
+  const low = Number(min ?? max ?? 0);
+  const high = Number(max ?? min ?? 0);
+  const format = (value) => `${value.toFixed(value >= 100 ? 0 : 1)}%`;
+  if (Math.abs(low - high) <= 1e-9) {
+    return format(low);
+  }
+  return `${format(low)} - ${format(high)}`;
+}
+
+function shouldShowGroupDiscountBadge(item) {
+  const inputMin = Number(item?.input_price_min);
+  const inputMax = Number(item?.input_price_max);
+  const cacheMin = Number(item?.cache_read_price_min);
+  const cacheMax = Number(item?.cache_read_price_max);
+  if (!Number.isFinite(inputMin) || !Number.isFinite(inputMax) || !Number.isFinite(cacheMin) || !Number.isFinite(cacheMax)) {
+    return false;
+  }
+  return cacheMin < inputMin - 1e-12 || cacheMax < inputMax - 1e-12;
 }
 
 function formatGroupCachePriceRange(item, symbol, rate, t) {
