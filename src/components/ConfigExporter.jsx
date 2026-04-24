@@ -6,6 +6,7 @@ import { useSite } from '../context/SiteContext';
 
 const TOOLS = [
   { id: 'claudecode', name: 'Claude Code', path: '~/.claude/settings.json' },
+  { id: 'hermes', name: 'Hermes', path: 'hermes-subrouter.sh' },
   { id: 'openclaw', name: 'OpenClaw', path: '~/.openclaw/openclaw.json' },
   { id: 'opencode', name: 'OpenCode', path: '~/.config/opencode/opencode.json' },
   { id: 'cursor', name: 'Cursor', path: 'Settings -> Models -> OpenAI API Key' },
@@ -329,6 +330,33 @@ const ConfigExporter = ({ tokens = [] }) => {
     "ANTHROPIC_MODEL": "${selectedModel}"
   }
 }`;
+      case 'hermes':
+        return `#!/usr/bin/env bash
+set -euo pipefail
+
+# Hermes uses profiles for isolated config, API keys, memory, and sessions.
+# This creates/updates a SubRouter profile and exports it as a tar.gz archive.
+
+PROFILE_NAME="subrouter"
+PROFILE_DIR="$HOME/.hermes/profiles/$PROFILE_NAME"
+
+if ! hermes profile show "$PROFILE_NAME" >/dev/null 2>&1; then
+  hermes profile create "$PROFILE_NAME"
+fi
+
+mkdir -p "$PROFILE_DIR"
+cat > "$PROFILE_DIR/config.yaml" <<'YAML'
+model:
+  default: ${selectedModel}
+  provider: custom
+  base_url: ${serverAddress}/v1
+  api_key: ${apiKey}
+YAML
+
+hermes profile use "$PROFILE_NAME"
+hermes profile export "$PROFILE_NAME" -o "./$PROFILE_NAME.tar.gz"
+
+echo "Hermes profile exported to ./$PROFILE_NAME.tar.gz"`;
       case 'ccswitch':
         return generateCCSwitchLink();
       case 'openclaw': {
@@ -445,6 +473,8 @@ print(message.content[0].text)`;
     switch (selectedTool) {
       case 'curl':
         return 'api-call.sh';
+      case 'hermes':
+        return 'hermes-subrouter.sh';
       case 'python':
       case 'anthropic':
         return 'main.py';
