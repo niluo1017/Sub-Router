@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Megaphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   getUserUsage,
@@ -174,6 +175,9 @@ export default function Dashboard() {
   );
   const hasCustomCommissionRate =
     currentCommissionRate > defaultCommissionRate + 1e-8;
+  const announcements = Array.isArray(site?.announcements)
+    ? site.announcements.filter((item) => item?.content)
+    : (site?.announcement ? [{ content: site.announcement, publish_date: '' }] : []);
 
   const handleWithdraw = async () => {
     const amount = Number.parseFloat(withdrawAmount);
@@ -310,6 +314,32 @@ export default function Dashboard() {
         </h1>
         <p className="text-sm text-page-secondary">{t('dashboard.manageDesc')}</p>
       </div>
+
+      {announcements.length > 0 && (
+        <div className="glass rounded-2xl p-5 mb-8 border border-brand-500/20">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-page-link">
+              <Megaphone size={17} />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-page">{t('dashboard.announcements')}</h2>
+              <p className="text-xs text-page-muted">{t('dashboard.announcementsDesc')}</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {announcements.slice(0, 10).map((item, index) => (
+              <div key={`${item.publish_date || 'notice'}-${index}`} className="flex gap-3 rounded-xl bg-page-surface/60 p-3">
+                <div className="shrink-0 rounded-full border border-brand-500/20 bg-brand-500/10 px-3 py-1 text-xs font-medium text-page-link">
+                  {item.publish_date || t('dashboard.notice')}
+                </div>
+                <p className="min-w-0 whitespace-pre-wrap text-sm leading-6 text-page-secondary">
+                  {item.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="glass rounded-2xl p-6">
