@@ -8,6 +8,7 @@ import { calcOfficialEquivList } from '../../utils/officialEquiv';
 import RotatingEquiv from '../../components/bits/RotatingEquiv';
 import CountUp from '../../components/bits/CountUp';
 import FadeContent from '../../components/bits/FadeContent';
+import ApiEndpoints from '../../components/ApiEndpoints';
 
 export default function MinimalHome() {
   const { t } = useTranslation();
@@ -80,6 +81,8 @@ export default function MinimalHome() {
           </div>
         </FadeContent>
       </section>
+
+      <ApiEndpoints />
 
       {/* Features — two-column layout */}
       <section className="max-w-5xl mx-auto px-6 py-20">

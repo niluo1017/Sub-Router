@@ -8,6 +8,7 @@ import { calcOfficialEquivList } from '../../utils/officialEquiv';
 import RotatingEquiv from '../../components/bits/RotatingEquiv';
 import CountUp from '../../components/bits/CountUp';
 import FadeContent from '../../components/bits/FadeContent';
+import ApiEndpoints from '../../components/ApiEndpoints';
 
 export default function CleanHome() {
   const { t } = useTranslation();
@@ -81,6 +82,8 @@ export default function CleanHome() {
           </div>
         </FadeContent>
       </section>
+
+      <ApiEndpoints />
 
       {/* Features */}
       <section className="max-w-5xl mx-auto px-6 py-20">

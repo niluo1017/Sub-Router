@@ -38,6 +38,13 @@
     "home.createFreeAccount": "免费创建账户",
     "home.signIn": "登录",
     "home.defaultHeroTitle": "AI API 平台",
+    "home.apiEndpointsTitle": "API 调用地址",
+    "home.apiEndpointsDesc": "创建 API Key 后，可使用以下任一地址调用。优先选择最适合当前网络的位置。",
+    "home.apiEndpointClickToCopy": "点击地址即可复制",
+    "home.apiEndpointSite": "分站域名",
+    "home.apiEndpointWorld": "海外调用",
+    "home.apiEndpointChina": "中国调用",
+    "home.apiEndpointApiOnly": "仅支持 API",
 
     "login.welcomeBack": "欢迎回来",
     "login.signInTo": "登录到 {{name}}",

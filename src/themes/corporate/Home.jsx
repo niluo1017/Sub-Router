@@ -8,6 +8,7 @@ import { calcOfficialEquivList } from '../../utils/officialEquiv';
 import RotatingEquiv from '../../components/bits/RotatingEquiv';
 import CountUp from '../../components/bits/CountUp';
 import FadeContent from '../../components/bits/FadeContent';
+import ApiEndpoints from '../../components/ApiEndpoints';
 
 export default function CorporateHome() {
   const { t } = useTranslation();
@@ -80,6 +81,8 @@ export default function CorporateHome() {
           </div>
         </FadeContent>
       </section>
+
+      <ApiEndpoints />
 
       {/* Features */}
       <section className="bg-slate-50 border-y border-slate-200">
