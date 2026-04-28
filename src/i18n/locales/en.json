@@ -41,7 +41,7 @@
     "home.apiEndpointsTitle": "API Endpoints",
     "home.apiEndpointsDesc": "After creating an API key, use any of these URLs. Pick the endpoint closest to your network.",
     "home.apiEndpointClickToCopy": "Click an address to copy it",
-    "home.apiEndpointSite": "Sub-site Domain",
+    "home.apiEndpointSite": "Official Domain",
     "home.apiEndpointWorld": "Overseas calls",
     "home.apiEndpointChina": "China calls",
     "home.apiEndpointApiOnly": "API only",
