@@ -5,6 +5,7 @@ import { ArrowRight, LogOut, Menu, UserCircle, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
 import LanguageSwitch from '../../components/LanguageSwitch';
+import maoqiuAiImage from '../../assets/maoqiu-ai.png';
 
 const configs = {
   aurora: {
@@ -52,6 +53,22 @@ const configs = {
     mobileIdle: 'text-stone-600 hover:bg-white hover:text-stone-950',
     footer: 'mt-auto border-t border-stone-200 bg-[#fbfaf7]',
   },
+  maoqiu: {
+    root: 'theme-light theme-maoqiu min-h-screen flex flex-col bg-white text-slate-950',
+    main: 'theme-page-shell maoqiu-page-shell flex-1',
+    announcement: 'border-b border-[#1b2a5b]/10 bg-[#f7f9ff] px-4 py-2.5 text-center text-sm font-semibold text-[#1b2a5b]',
+    header: 'sticky top-0 z-50 border-b border-slate-200/80 bg-white/88 backdrop-blur-xl',
+    logo: 'bg-gradient-to-br from-[#0788ff] via-[#2248ff] to-[#ec4bff] text-white shadow-lg shadow-blue-500/20',
+    navWrap: 'hidden items-center gap-1 rounded-lg border border-slate-200 bg-white/82 p-1 shadow-sm md:flex',
+    navActive: 'bg-gradient-to-r from-[#0788ff] to-[#b93dff] text-white shadow-sm',
+    navIdle: 'text-slate-600 hover:bg-[#f4f7ff] hover:text-[#071337]',
+    language: 'text-slate-500 hover:bg-[#f4f7ff] hover:text-[#071337]',
+    primary: 'bg-gradient-to-r from-[#0788ff] to-[#b93dff] text-white hover:brightness-105',
+    mobileActive: 'bg-[#eef5ff] text-[#2352ff]',
+    mobileIdle: 'text-slate-600 hover:bg-[#f4f7ff] hover:text-[#071337]',
+    footer: 'mt-auto border-t border-slate-200 bg-white',
+    logoImage: maoqiuAiImage,
+  },
 };
 
 export default function BrandLayout({ variant }) {
@@ -89,7 +106,19 @@ export default function BrandLayout({ variant }) {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-3 group">
             {site?.logo ? (
-              <img src={site.logo} alt={siteName} className="h-8 w-auto max-w-[150px] object-contain" />
+              <img
+                src={site.logo}
+                alt={siteName}
+                className="h-8 w-auto max-w-[150px] object-contain"
+                onError={(event) => {
+                  if (!cfg.logoImage || event.currentTarget.src === cfg.logoImage) return;
+                  event.currentTarget.src = cfg.logoImage;
+                }}
+              />
+            ) : cfg.logoImage ? (
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl ${cfg.logo}`}>
+                <img src={cfg.logoImage} alt={siteName} className="h-full w-full object-cover" />
+              </div>
             ) : (
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-black ${cfg.logo}`}>
                 {siteName.charAt(0)}
