@@ -1,0 +1,1 @@
+import{j as r}from"./index-D7kfoiME.js";import{B as t}from"./BrandLayout-CHy7vcjN.js";import"./LanguageSwitch-CZ06yzcO.js";import"./maoqiu-ai-D0tNEjuk.js";import"./menu-CWAccd_D.js";import"./arrow-right-CjXxTAbC.js";function e(){return r.jsx(t,{variant:"terminal"})}export{e as default};
