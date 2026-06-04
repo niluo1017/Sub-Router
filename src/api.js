@@ -1,5 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import i18n from './i18n';
+import { normalizeAppLanguage } from './i18n/languageUtils';
 
 export const Q = 500000; // QuotaPerUnit — single source of truth
 
@@ -70,6 +72,9 @@ api.interceptors.request.use((config) => {
   if (userId) {
     config.headers['New-Api-User'] = userId;
   }
+  config.headers['Accept-Language'] = normalizeAppLanguage(
+    localStorage.getItem('i18nextLng') || i18n.resolvedLanguage || navigator.language,
+  );
   return config;
 });
 
@@ -96,7 +101,7 @@ api.interceptors.response.use(
       // Emit event so AuthContext can clear React state
       window.dispatchEvent(new Event('auth:logout'));
       if (!shouldSkipErrorHandler(err.config)) {
-        toast.error('Session expired, please log in again');
+        toast.error(i18n.t('common.sessionExpired'));
       }
     } else if (!shouldSkipErrorHandler(err.config)) {
       toast.error(msg);
@@ -139,6 +144,7 @@ export const logout = () => api.post('/api/dist/user/logout');
 
 // ===== User =====
 export const getUserSelf = (config) => api.get('/api/dist/user/self', config);
+export const updateUserPassword = (data) => api.put('/api/dist/user/password', data);
 export const getUserUsage = () => api.get('/api/dist/user/usage');
 export const getUserLogs = (params) => api.get('/api/dist/user/logs', { params });
 export const getUserLogsStat = (params) => api.get('/api/dist/user/logs/stat', { params });
@@ -167,6 +173,11 @@ export const createCreemOrder = (data) => api.post('/api/dist/topup/creem/pay', 
 export const createCryptoOrder = (data) => api.post('/api/dist/topup/crypto/pay', data);
 export const getCryptoOrderStatus = (tradeNo) => api.get(`/api/dist/topup/crypto/status?trade_no=${tradeNo}`);
 export const getTopupHistory = (params) => api.get('/api/dist/topup/history', { params });
+
+// ===== Invoice =====
+export const getInvoiceInfo = () => api.get('/api/dist/invoice/info');
+export const getInvoiceHistory = (params) => api.get('/api/dist/invoice/history', { params });
+export const createInvoice = (data) => api.post('/api/dist/invoice', data);
 
 // ===== Affiliate / Invitation =====
 export const getAffCode = () => api.get('/api/dist/aff');

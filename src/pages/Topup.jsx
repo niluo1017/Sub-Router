@@ -61,7 +61,17 @@ function findCompatibleCreemProduct(products, amount) {
 const paymentWindowPlaceholderHtml =
   '<!doctype html><title>Opening payment...</title><body style="font-family: system-ui, sans-serif; padding: 24px;">Opening payment...</body>';
 
+function shouldUseSameTabPaymentRedirect() {
+  if (typeof window === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  return (
+    /Android|iPhone|iPad|iPod|Mobile|MicroMessenger|FBAN|FBAV|Instagram/i.test(userAgent) ||
+    (navigator.maxTouchPoints > 1 && window.matchMedia?.('(max-width: 768px)').matches)
+  );
+}
+
 function openPendingPaymentWindow() {
+  if (shouldUseSameTabPaymentRedirect()) return null;
   try {
     const paymentWindow = window.open('', '_blank');
     if (paymentWindow) {
@@ -81,7 +91,7 @@ function redirectPaymentWindow(paymentWindow, url) {
     paymentWindow.focus?.();
     return true;
   }
-  window.location.href = url;
+  window.location.assign(url);
   return true;
 }
 
@@ -260,7 +270,7 @@ export default function Topup() {
     setPaymentLoading(true);
     setPayingMethod(method);
     try {
-      const returnUrl = window.location.origin + '/topup';
+      const returnUrl = window.location.origin + '/topup?payment=return';
       const data = { amount: payAmount, payment_method: method, return_url: returnUrl };
 
       if (isCreemPayment(method)) {
@@ -268,6 +278,7 @@ export default function Topup() {
           product_id: creemProduct.productId,
           payment_method: 'creem',
           amount: payAmount,
+          return_url: returnUrl,
         });
         if (res.data.message === 'success' && res.data.data?.checkout_url) {
           redirectPaymentWindow(paymentWindow, res.data.data.checkout_url);
