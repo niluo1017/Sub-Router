@@ -1,1 +1,0 @@
-import{j as t}from"./index-BLb7YPU9.js";import{B as r}from"./BrandLayout-BPn83e12.js";import"./LanguageSwitch-Br4SmGAa.js";import"./maoqiu-ai-D0tNEjuk.js";import"./circle-user-CAnuH2d7.js";import"./menu-B7J5WbLd.js";import"./arrow-right-RLISpvEQ.js";function s(){return t.jsx(r,{variant:"market"})}export{s as default};
