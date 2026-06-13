@@ -174,3 +174,5 @@ Pages in `src/pages/` are shared across all themes:
 ## License
 
 MIT
+
+Please also review the bilingual [Disclaimer](./DISCLAIMER.md), which covers warranty, liability, compliance, AI outputs, third-party services, credentials, billing, data, security, availability, and affiliation notices. The disclaimer does not replace or modify the project license.

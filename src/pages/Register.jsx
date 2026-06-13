@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useSite } from '../context/SiteContext';
+import { LegalAgreementCheckbox } from '../components/LegalLinks';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -12,6 +13,7 @@ export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', password: '', password2: '', email: '' });
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Capture aff code from URL and persist in localStorage
   useEffect(() => {
@@ -42,6 +44,10 @@ export default function Register() {
     }
     if (form.password.length > 20) {
       toast.error(t('register.passwordLength'));
+      return;
+    }
+    if (!agreedToTerms) {
+      toast.error(t('legal.agreeRequired'));
       return;
     }
     setLoading(true);
@@ -128,9 +134,15 @@ export default function Register() {
               />
             </div>
 
+            <LegalAgreementCheckbox
+              id="dist-register-agreement"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+            />
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreedToTerms}
               className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {loading && (
