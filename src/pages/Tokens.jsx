@@ -801,8 +801,8 @@ function TokenListSection({
           <p className="text-xs text-page-muted mt-1">{t('tokens.noKeysHint')}</p>
         </div>
       ) : (
-        <div className="glass-sm rounded-xl overflow-x-auto">
-          <table className="w-full text-sm min-w-[760px]">
+        <div className="glass-sm rounded-xl">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-page-divider text-page-secondary">
                 <th className="text-left px-4 py-3 font-medium">{t('tokens.name')}</th>
