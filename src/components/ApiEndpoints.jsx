@@ -48,6 +48,7 @@ export default function ApiEndpoints() {
       ...SHARED_API_ENDPOINTS.map((endpoint) => ({
         ...endpoint,
         label: t(endpoint.labelKey),
+        note: endpoint.noteKey ? t(endpoint.noteKey) : '',
         apiOnly: true,
       })),
     ].filter((endpoint) => endpoint.url),
@@ -97,6 +98,11 @@ export default function ApiEndpoints() {
               <code className="block break-all text-[11px] leading-relaxed text-page-secondary">
                 {endpoint.url}
               </code>
+              {endpoint.note && (
+                <span className="mt-1.5 block text-[11px] text-page-muted">
+                  {endpoint.note}
+                </span>
+              )}
             </button>
           ))}
         </div>
