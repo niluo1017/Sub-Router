@@ -87,7 +87,9 @@
     "home.apiEndpointClickToCopy": "点击地址即可复制",
     "home.apiEndpointSite": "官网域名",
     "home.apiEndpointOverseasDirect": "海外直链",
-    "home.apiEndpointOverseasCdn": "海外CDN",
+    "home.apiEndpointOverseasDirectNote": "海外网络速度更快",
+    "home.apiEndpointOverseasCdn": "大陆线路",
+    "home.apiEndpointOverseasCdnNote": "非海外线路，大陆网络可用",
     "home.apiEndpointApiOnly": "仅支持 API",
 
     "login.welcomeBack": "欢迎回来",

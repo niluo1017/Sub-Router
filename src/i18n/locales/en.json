@@ -87,7 +87,9 @@
     "home.apiEndpointClickToCopy": "Click an address to copy it",
     "home.apiEndpointSite": "Official Domain",
     "home.apiEndpointOverseasDirect": "Overseas direct",
-    "home.apiEndpointOverseasCdn": "Overseas CDN",
+    "home.apiEndpointOverseasDirectNote": "Faster on overseas networks",
+    "home.apiEndpointOverseasCdn": "Mainland line",
+    "home.apiEndpointOverseasCdnNote": "Non-overseas route, works on mainland networks",
     "home.apiEndpointApiOnly": "API only",
 
     "login.welcomeBack": "Welcome Back",
