@@ -703,13 +703,13 @@ export default function Tokens() {
             </div>
             <div className="bg-page-inset rounded-xl p-4 flex items-center gap-3">
               <code className="text-sm font-mono text-page-success flex-1 break-all select-all">
-                {newKey}
+                {`sk-${newKey}`}
               </code>
               <button
-                onClick={() => handleCopy(newKey)}
+                onClick={() => handleCopy(`sk-${newKey}`)}
                 className="btn-primary !px-4 !py-1.5 flex-shrink-0"
               >
-                {copiedId === newKey ? t('tokens.copied') : t('tokens.copy')}
+                {copiedId === `sk-${newKey}` ? t('tokens.copied') : t('tokens.copy')}
               </button>
             </div>
             <div className="flex justify-end mt-4">
