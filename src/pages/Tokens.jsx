@@ -15,6 +15,7 @@ import ConfigExporter from '../components/ConfigExporter';
 import DownloadCatalog from '../components/DownloadCatalog';
 import { useCurrency, useSite } from '../context/SiteContext';
 import { formatPricingDetailRows } from '../utils/pricingDetails';
+import { SHARED_API_ENDPOINTS } from '../constants/apiEndpoints';
 import toast from 'react-hot-toast';
 
 const normalizeOfficialKeyMaxDiscount = (value) => {
@@ -765,6 +766,22 @@ function TokenListSection({
   t,
   official = false,
 }) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const { symbol = '$', rate = 1 } = currency || {};
+  const siteBase = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
+  const connLines = [
+    { name: t('home.apiEndpointSite'), url: siteBase },
+    ...SHARED_API_ENDPOINTS.map((e) => ({ name: t(e.labelKey), url: String(e.url).replace(/\/+$/, '') })),
+  ].filter((l) => l.url);
+  const buildConnectionInfo = (token) => {
+    const linesText = connLines.map((l) => `${l.name}: ${l.url}`).join('\n');
+    return `API 密钥: sk-${token.key}\n${linesText}`;
+  };
+  const buildCCSwitch = (token) => {
+    const base = connLines[0]?.url || siteBase;
+    return `ANTHROPIC_BASE_URL=${base}\nANTHROPIC_AUTH_TOKEN=sk-${token.key}`;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -784,132 +801,172 @@ function TokenListSection({
           <p className="text-xs text-page-muted mt-1">{t('tokens.noKeysHint')}</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {tokens.map((token) => (
-            <div key={token.id} className="glass-sm rounded-xl p-5">
-              <div className="flex items-center gap-4">
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-page">{token.name}</p>
-                    {official && (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/10 text-page-success">
-                        {t('tokens.officialKeyBadge')}
-                      </span>
-                    )}
-                  </div>
-                  {official && formatOfficialDiscount(token.official_key_max_discount) && (
-                    <p className="text-xs text-page-muted mt-0.5">
-                      {t('tokens.officialKeyTokenMaxDiscount', {
-                        discount: formatOfficialDiscount(token.official_key_max_discount),
-                      })}
-                    </p>
-                  )}
-                  <TokenControlSummary token={token} currency={currency} t={t} />
-                </div>
-                <span className="text-xs text-page-muted hidden md:block">
-                  {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onToggleSupportedModels(token.id)}
-                    className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
-                  >
-                    {expandedTokens[token.id] ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
-                  </button>
-                  <button
-                    onClick={() => onToggle(token)}
-                    className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
-                      token.status === 1
-                        ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
-                        : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
-                    }`}
-                  >
-                    {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
-                  </button>
-                  <button
-                    onClick={() => onEdit(token)}
-                    className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
-                  >
-                    {t('tokens.edit')}
-                  </button>
-                  <button
-                    onClick={() => onDelete(token)}
-                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
-                  >
-                    {t('tokens.delete')}
-                  </button>
-                </div>
-              </div>
-              {token.key && (
-                <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
-                  <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
-                    sk-{token.key}
-                  </code>
-                  <button
-                    onClick={() => onCopy('sk-' + token.key)}
-                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
-                  >
-                    {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
-                  </button>
-                </div>
-              )}
-              {expandedTokens[token.id] && (
-                <div className="mt-3 rounded-xl border border-page-divider bg-page-surface/50 px-4 py-3">
-                  {tokenModels[token.id]?.loading ? (
-                    <div className="flex items-center gap-2 text-sm text-page-secondary">
-                      <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-                      <span>{t('tokens.loadingSupportedModels')}</span>
-                    </div>
-                  ) : tokenModels[token.id]?.error ? (
-                    <p className="text-sm text-page-danger">{t('tokens.loadSupportedModelsFailed')}</p>
-                  ) : (
-                    <>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-page">
-                          {t('tokens.supportedModels')} ({tokenModels[token.id]?.count || 0})
-                        </p>
-                        {tokenModels[token.id]?.restricted_by_models && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
-                            {t('tokens.restrictedByModels')}
-                          </span>
-                        )}
-                        {tokenModels[token.id]?.restricted_by_providers && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
-                            {t('tokens.restrictedByProviders')}
-                          </span>
-                        )}
-                      </div>
-                      {tokenModels[token.id]?.provider_names?.length > 0 && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-page-muted">{t('tokens.supportedProviders')}</span>
-                          {tokenModels[token.id].provider_names.map((name) => (
-                            <span key={name} className="px-2 py-0.5 rounded-full text-[11px] bg-page-inset text-page-secondary">
-                              {name}
+        <div className="glass-sm rounded-xl overflow-x-auto">
+          <table className="w-full text-sm min-w-[760px]">
+            <thead>
+              <tr className="border-b border-page-divider text-page-secondary">
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.name')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.status', '状态')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.apiKeyColumn', 'API 密钥')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.quotaLimit')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.modelLimits')}</th>
+                <th className="text-left px-4 py-3 font-medium">IP</th>
+                <th className="text-right px-4 py-3 font-medium">{t('tokens.actions', '操作')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tokens.map((token) => {
+                const keyStr = token.key ? `sk-${token.key}` : '';
+                const masked = token.key
+                  ? `sk-${token.key.slice(0, 4)}••••${token.key.slice(-4)}`
+                  : '—';
+                const modelCount = parseModelLimits(token.model_limits).length;
+                const ipLimited = String(token.allow_ips || '').trim();
+                const quotaText = token.unlimited_quota
+                  ? t('tokens.unlimitedQuota')
+                  : `${symbol}${((Number(token.remain_quota || 0) / Q) * Number(rate || 1)).toFixed(2)}`;
+                const isOpen = openMenuId === token.id;
+                const expanded = expandedTokens[token.id];
+                return (
+                  <React.Fragment key={token.id}>
+                    <tr className="border-b border-page-divider last:border-0 hover:bg-page-surface transition-colors align-middle">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
+                          <span className="font-medium text-page">{token.name}</span>
+                          {official && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-page-success">
+                              {t('tokens.officialKeyBadge')}
                             </span>
-                          ))}
+                          )}
                         </div>
-                      )}
-                      {tokenModels[token.id]?.models?.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {tokenModels[token.id].models.map((modelName) => (
-                            <code key={modelName} className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-page-inset text-page-secondary">
-                              {modelName}
-                            </code>
-                          ))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => onToggle(token)}
+                          className={`text-xs font-medium ${token.status === 1 ? 'text-page-success' : 'text-page-muted'}`}
+                        >
+                          {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <code className="font-mono text-xs text-page-muted">{masked}</code>
+                          <button
+                            onClick={() => onCopy(keyStr)}
+                            className="text-page-muted hover:text-brand-500 transition-colors"
+                            title={t('tokens.copy')}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                            </svg>
+                          </button>
                         </div>
-                      ) : (
-                        <p className="mt-3 text-sm text-page-muted">{t('tokens.noSupportedModels')}</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                      </td>
+                      <td className="px-4 py-3 text-page-secondary whitespace-nowrap">{quotaText}</td>
+                      <td className="px-4 py-3 text-page-secondary whitespace-nowrap">
+                        {modelCount > 0 ? t('tokens.modelLimitedCount', { count: modelCount }) : t('tokens.unlimitedQuota')}
+                      </td>
+                      <td className="px-4 py-3 text-page-secondary whitespace-nowrap">
+                        {ipLimited ? t('tokens.ipLimited') : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1 relative">
+                          <button
+                            onClick={() => onEdit(token)}
+                            className="p-1.5 rounded-md text-page-muted hover:bg-page-surface-hover hover:text-brand-500 transition-colors"
+                            title={t('tokens.edit')}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => setOpenMenuId(isOpen ? null : token.id)}
+                            className="p-1.5 rounded-md text-page-muted hover:bg-page-surface-hover hover:text-page transition-colors"
+                            title={t('tokens.more', '更多')}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
+                            </svg>
+                          </button>
+                          {isOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                              <div className="absolute right-0 top-9 z-50 w-48 rounded-xl border border-page-divider bg-page-inset shadow-lg py-1 text-left">
+                                <MenuItem onClick={() => { onCopy(keyStr); setOpenMenuId(null); }}>
+                                  {t('tokens.copyKey', '复制密钥')}
+                                </MenuItem>
+                                <MenuItem onClick={() => { onCopy(buildConnectionInfo(token)); setOpenMenuId(null); }}>
+                                  {t('tokens.copyConnInfo', '复制连接信息')}
+                                </MenuItem>
+                                <MenuItem onClick={() => { onCopy(buildCCSwitch(token)); setOpenMenuId(null); }}>
+                                  CC Switch
+                                </MenuItem>
+                                <MenuItem onClick={() => { onToggleSupportedModels(token.id); setOpenMenuId(null); }}>
+                                  {expanded ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
+                                </MenuItem>
+                                <MenuItem danger onClick={() => { onDelete(token); setOpenMenuId(null); }}>
+                                  {t('tokens.delete')}
+                                </MenuItem>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="border-b border-page-divider bg-page-surface/50">
+                        <td colSpan={7} className="px-4 py-3">
+                          {tokenModels[token.id]?.loading ? (
+                            <div className="flex items-center gap-2 text-sm text-page-secondary">
+                              <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+                              <span>{t('tokens.loadingSupportedModels')}</span>
+                            </div>
+                          ) : tokenModels[token.id]?.error ? (
+                            <p className="text-sm text-page-danger">{t('tokens.loadSupportedModelsFailed')}</p>
+                          ) : (
+                            <>
+                              <p className="text-sm font-medium text-page mb-2">
+                                {t('tokens.supportedModels')} ({tokenModels[token.id]?.count || 0})
+                              </p>
+                              {tokenModels[token.id]?.models?.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {tokenModels[token.id].models.map((modelName) => (
+                                    <code key={modelName} className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-page-inset text-page-secondary">
+                                      {modelName}
+                                    </code>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-page-muted">{t('tokens.noSupportedModels')}</p>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
+  );
+}
+
+function MenuItem({ onClick, children, danger = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-page-surface-hover ${
+        danger ? 'text-page-danger' : 'text-page-secondary hover:text-page'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
