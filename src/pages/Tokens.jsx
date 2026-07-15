@@ -464,82 +464,24 @@ export default function Tokens() {
     <div className="max-w-5xl mx-auto px-6 py-10">
 
       {/* ========== Section 1: Create Key with Groups ========== */}
-      <div className="mb-10">
-        <h1 className="text-2xl font-heading font-bold text-page">
-          {hasGroups ? t('tokens.selectGroup') : t('tokens.title')}
-        </h1>
-        {hasGroups && (
+      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-page">{t('tokens.title')}</h1>
           <p className="text-sm text-page-secondary mt-1">{t('tokens.selectGroupSubtitle')}</p>
-        )}
-
-        {/* Default (All Providers) Card */}
-        <div className="mt-6">
-          <button
-            onClick={openCreateDefault}
-            className="w-full glass rounded-xl p-4 flex items-center gap-4 hover:border-brand-500/50 border border-page-divider transition-all group text-left"
-          >
-            <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-page">{hasGroups ? t('tokens.defaultGroup') : t('tokens.newKey')}</p>
-              {hasGroups && (
-                <p className="text-xs text-page-secondary mt-0.5">{t('tokens.defaultGroupDesc')}</p>
-              )}
-            </div>
-            <span className="text-xs font-medium text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-              {t('tokens.create')} →
-            </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {officialChannelsEnabled && (
+            <button onClick={openCreateOfficial} className="btn-secondary whitespace-nowrap">
+              {t('tokens.officialKeyGroup')}
+            </button>
+          )}
+          <button onClick={openCreateDefault} className="btn-primary whitespace-nowrap inline-flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('tokens.createApiKey')}
           </button>
         </div>
-
-        {officialChannelsEnabled && (
-          <div className="mt-3">
-            <button
-              onClick={openCreateOfficial}
-              className="w-full glass rounded-xl p-4 flex items-center gap-4 hover:border-brand-500/50 border border-page-divider transition-all group text-left"
-            >
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M12 3.75l7.5 3.75v5.25c0 4.125-3.06 7.688-7.5 8.625-4.44-.937-7.5-4.5-7.5-8.625V7.5L12 3.75z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-page">{t('tokens.officialKeyGroup')}</p>
-                <p className="text-xs text-page-secondary mt-0.5">{t('tokens.officialKeyGroupDesc')}</p>
-              </div>
-              <span className="text-xs font-medium text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                {t('tokens.create')} →
-              </span>
-            </button>
-          </div>
-        )}
-
-        {/* Vendor Category Sections */}
-        {hasGroups && Object.entries(groupedByVendor).map(([vendor, groups]) => (
-          <div key={vendor} className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-base font-semibold text-page">{vendor}</h2>
-              <span className="text-[11px] text-page-muted bg-page-surface px-2 py-0.5 rounded-full">
-                {groups.length} {t('tokens.groupCount')}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {groups.map((group) => (
-                <KeyGroupCard
-                  key={group.id}
-                  group={group}
-                  parseTags={parseTags}
-                  onSelect={openCreateFromGroup}
-                  onViewPricing={openGroupPricing}
-                  t={t}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ========== Create Modal ========== */}
@@ -549,14 +491,32 @@ export default function Tokens() {
             <h2 className="text-lg font-semibold text-page mb-4">
               {createType === 'official' ? t('tokens.createOfficialKey') : t('tokens.createApiKey')}
             </h2>
-            {createType === 'normal' && selectedGroupId > 0 && (() => {
-              return selectedCreateGroup ? (
-                <div className="mb-4 p-3 rounded-lg bg-page-surface border border-page-divider">
-                  <p className="text-xs text-page-muted">{t('tokens.selectedGroup')}</p>
-                  <p className="text-sm font-medium text-page">{selectedCreateGroup.name}</p>
-                </div>
-              ) : null;
-            })()}
+            {createType === 'normal' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.selectedGroup')}</label>
+                <select
+                  className="input"
+                  value={selectedGroupId}
+                  onChange={(e) => {
+                    const gid = Number(e.target.value);
+                    setSelectedGroupId(gid);
+                    const g = keyGroups.find((x) => x.id === gid);
+                    if (gid > 0 && g) setCreateName(g.name);
+                  }}
+                >
+                  <option value={0}>{t('tokens.defaultGroup')}</option>
+                  {keyGroups.map((g) => (
+                    <option key={g.id} value={g.id} disabled={g.is_unavailable}>
+                      {g.vendor_category ? `${g.vendor_category} · ${g.name}` : g.name}
+                      {g.is_unavailable ? ` (${t('tokens.unavailable')})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedCreateGroup?.description && (
+                  <p className="text-xs text-page-muted mt-1.5">{selectedCreateGroup.description}</p>
+                )}
+              </div>
+            )}
             {createType === 'official' && (
               <div className="mb-4 p-3 rounded-lg bg-page-surface border border-page-divider">
                 <p className="text-sm font-medium text-page">{t('tokens.officialKeyGroup')}</p>
