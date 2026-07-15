@@ -22,6 +22,7 @@ export function getSiteNavItems({ t, site }) {
     ...(site?.enable_topup
       ? [{ to: '/topup', label: t('nav.topup'), auth: true }]
       : []),
+    { to: '/docs', label: t('nav.docs'), auth: false },
     { to: '/account', label: t('nav.account'), auth: true },
   ];
 }
