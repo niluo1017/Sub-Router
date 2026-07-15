@@ -52,6 +52,31 @@ const previewPackages = [
   },
 ];
 
+const previewOfficialChannels = [
+  {
+    official_channel_id: 1,
+    name: 'OpenAI Official',
+    description: 'OpenAI official model catalog supplied by multiple provider keys.',
+    max_final_discount: 0.5,
+    min_allowed_final_discount: 0.32,
+    min_final_price_discount: 0.32,
+    usable_model_count: 24,
+    available_key_count: 18,
+    available_provider_count: 6,
+  },
+  {
+    official_channel_id: 2,
+    name: 'Anthropic Official',
+    description: 'Claude official models with station-level price caps.',
+    max_final_discount: 0.6,
+    min_allowed_final_discount: 0.4,
+    min_final_price_discount: 0.4,
+    usable_model_count: 8,
+    available_key_count: 9,
+    available_provider_count: 4,
+  },
+];
+
 const getPreviewTheme = () => {
   if (!import.meta.env.DEV || typeof window === 'undefined') return '';
   return new URLSearchParams(window.location.search).get('preview_theme') || '';
@@ -115,12 +140,15 @@ export const getSiteInfo = () => {
   const theme = getPreviewTheme();
   if (theme) {
     return previewResponse({
-      name: 'SubRouter Preview',
+      name: 'API Preview',
       theme_template: theme,
       enable_topup: true,
       top_up_link: 'https://example.com/redeem-codes',
+      top_up_link_name: 'Redeem Code Shop',
       allow_sub_dist: true,
       show_app_market: true,
+      show_official_channels: true,
+      has_official_channels: true,
       currency: {
         code: 'CNY',
         symbol: '¥',
@@ -133,6 +161,7 @@ export const getSiteInfo = () => {
 };
 export const getSiteModels = () => getPreviewTheme() ? previewResponse(previewModels) : api.get('/api/dist/site/models');
 export const getSitePricing = () => api.get('/api/dist/site/pricing');
+export const getSiteOfficialChannels = () => getPreviewTheme() ? previewResponse(previewOfficialChannels) : api.get('/api/dist/site/official-channels');
 export const getSitePackages = () => getPreviewTheme() ? previewResponse(previewPackages) : api.get('/api/dist/site/packages');
 export const getSiteKeyGroups = () => api.get('/api/dist/site/key-groups');
 export const getSiteKeyGroupPricing = (id) => api.get(`/api/dist/site/key-groups/${id}/pricing`);

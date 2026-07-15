@@ -7,10 +7,11 @@ import {
   CCSWITCH_PRIMARY_DOWNLOAD,
   CCSWITCH_REPO_URL,
 } from '../constants/downloads';
+import { SHARED_API_ENDPOINTS } from '../constants/apiEndpoints';
 
 const TOOLS = [
   { id: 'claudecode', name: 'Claude Code', path: '~/.claude/settings.json' },
-  { id: 'hermes', name: 'Hermes', path: 'hermes-subrouter.sh' },
+  { id: 'hermes', name: 'Hermes', path: 'hermes-profile.sh' },
   { id: 'openclaw', name: 'OpenClaw', path: '~/.openclaw/openclaw.json' },
   {
     id: 'opencode',
@@ -36,20 +37,10 @@ const CCSWITCH_APPS = [
   { id: 'hermes', name: 'Hermes', endpointType: 'hermes' },
 ];
 
-const API_ENDPOINTS = [
-  {
-    id: 'overseas-direct',
-    url: 'https://aiapi.up.railway.app',
-    nameKey: 'config.apiEndpointOverseasDirectName',
-    descKey: 'config.apiEndpointOverseasDirectDesc',
-  },
-  {
-    id: 'overseas-cdn',
-    url: 'https://ai.orbitlink.me',
-    nameKey: 'config.apiEndpointOverseasCdnName',
-    descKey: 'config.apiEndpointOverseasCdnDesc',
-  },
-];
+const API_ENDPOINTS = SHARED_API_ENDPOINTS;
+
+const normalizeServerAddress = (serverAddress = '') =>
+  String(serverAddress || '').replace(/\/+$/, '');
 
 function ThemedSelect({
   value,
@@ -200,7 +191,7 @@ const ConfigExporter = ({ tokens = [] }) => {
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedTool, setSelectedTool] = useState('claudecode');
   const [selectedCCSwitchApp, setSelectedCCSwitchApp] = useState('codex');
-  const [selectedEndpointId, setSelectedEndpointId] = useState('overseas-direct');
+  const [selectedEndpointId, setSelectedEndpointId] = useState('overseas-cdn');
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -215,7 +206,10 @@ const ConfigExporter = ({ tokens = [] }) => {
       API_ENDPOINTS[0],
     [selectedEndpointId],
   );
-  const apiServerAddress = selectedEndpoint.url;
+  const apiServerAddress = useMemo(
+    () => normalizeServerAddress(selectedEndpoint.url),
+    [selectedEndpoint.url],
+  );
 
   const selectedToken = useMemo(
     () => tokens.find((token) => token.id === selectedTokenId) || null,
@@ -309,7 +303,7 @@ const ConfigExporter = ({ tokens = [] }) => {
         family: 'anthropic',
         baseUrl: apiServerAddress,
         openclawApi: 'anthropic-messages',
-        openclawProviderId: 'subrouter-anthropic',
+        openclawProviderId: 'anthropic-compatible',
         opencodeProviderId: 'anthropic',
       };
     }
@@ -347,7 +341,7 @@ const ConfigExporter = ({ tokens = [] }) => {
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/^_+|_+$/g, '');
-    return sanitized || 'subrouter';
+    return sanitized || 'api_provider';
   };
 
   const buildCCSwitchConfigPayload = ({
@@ -480,6 +474,7 @@ requires_openai_auth = true
     if (!selectedToken || !selectedModel) return '';
 
     const apiKey = `sk-${selectedToken.key}`;
+    const hermesProfileName = sanitizeProviderId(site?.name || window.location.hostname);
 
     switch (selectedTool) {
       case 'claudecode':
@@ -495,9 +490,9 @@ requires_openai_auth = true
 set -euo pipefail
 
 # Hermes uses profiles for isolated config, API keys, memory, and sessions.
-# This creates/updates a SubRouter profile and exports it as a tar.gz archive.
+# This creates/updates a dedicated API profile and exports it as a tar.gz archive.
 
-PROFILE_NAME="subrouter"
+PROFILE_NAME="${hermesProfileName}"
 PROFILE_DIR="$HOME/.hermes/profiles/$PROFILE_NAME"
 
 if ! hermes profile show "$PROFILE_NAME" >/dev/null 2>&1; then
@@ -634,7 +629,7 @@ print(message.content[0].text)`;
       case 'curl':
         return 'api-call.sh';
       case 'hermes':
-        return 'hermes-subrouter.sh';
+        return 'hermes-profile.sh';
       case 'python':
       case 'anthropic':
         return 'main.py';

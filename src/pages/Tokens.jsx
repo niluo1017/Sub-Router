@@ -7,24 +7,143 @@ import {
   deleteToken,
   getSiteKeyGroups,
   getSiteKeyGroupPricing,
+  getSiteModels,
   getTokenSupportedModels,
+  Q,
 } from '../api';
 import ConfigExporter from '../components/ConfigExporter';
 import DownloadCatalog from '../components/DownloadCatalog';
-import { useCurrency } from '../context/SiteContext';
+import { useCurrency, useSite } from '../context/SiteContext';
 import { formatPricingDetailRows } from '../utils/pricingDetails';
 import toast from 'react-hot-toast';
 
+const normalizeOfficialKeyMaxDiscount = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 1) : 0;
+};
+
+const trimPriceMultiplier = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  return n.toFixed(n >= 10 ? 1 : 2).replace(/\.?0+$/, '');
+};
+
+const formatDiscountHint = (value, t) => {
+  const discount = normalizeOfficialKeyMaxDiscount(value);
+  if (discount <= 0) return '';
+  if (discount < 1) {
+    return t('officialChannels.discountLabel', {
+      value: trimPriceMultiplier(discount * 10),
+      multiplier: trimPriceMultiplier(discount),
+      percent: trimPriceMultiplier(discount * 100),
+    });
+  }
+  return t('officialChannels.multiplierLabel', { value: trimPriceMultiplier(discount) });
+};
+
+const emptyControlForm = () => ({
+  unlimited_quota: true,
+  quota_amount: '',
+  expired_time: '',
+  model_limits: [],
+  allow_ips: '',
+  subrouter_sort_mode: 'token_price_first',
+});
+
+const padDatePart = (value) => String(value).padStart(2, '0');
+
+const timestampToDateTimeLocal = (timestamp) => {
+  const n = Number(timestamp);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  const date = new Date(n * 1000);
+  return [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join('-') + `T${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+};
+
+const parseDateTimeLocal = (value) => {
+  if (!value) return -1;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? Math.ceil(ms / 1000) : null;
+};
+
+const quotaToDisplayAmount = (quota, rate) => {
+  const n = Number(quota || 0);
+  const r = Number(rate || 1) || 1;
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return Number(((n / Q) * r).toFixed(6)).toString();
+};
+
+const displayAmountToQuota = (amount, rate) => {
+  const n = Number(amount || 0);
+  const r = Number(rate || 1) || 1;
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round((n / r) * Q);
+};
+
+const parseModelLimits = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const buildTokenControlPayload = (form, rate, t, includeModelLimits = true) => {
+  const expiredTime = parseDateTimeLocal(form.expired_time);
+  if (expiredTime === null) {
+    toast.error(t('tokens.invalidExpireTime'));
+    return null;
+  }
+  const unlimitedQuota = Boolean(form.unlimited_quota);
+  const remainQuota = unlimitedQuota ? 0 : displayAmountToQuota(form.quota_amount, rate);
+  if (!unlimitedQuota && remainQuota < 0) {
+    toast.error(t('tokens.invalidQuota'));
+    return null;
+  }
+  const payload = {
+    expired_time: expiredTime,
+    unlimited_quota: unlimitedQuota,
+    remain_quota: remainQuota,
+    allow_ips: String(form.allow_ips || '').trim(),
+    subrouter_sort_mode: form.subrouter_sort_mode || 'token_price_first',
+  };
+  if (includeModelLimits) {
+    payload.model_limits = parseModelLimits(form.model_limits).join(',');
+  }
+  return payload;
+};
+
+const tokenToEditForm = (token, rate) => ({
+  name: token?.name || '',
+  unlimited_quota: token?.unlimited_quota !== false,
+  quota_amount: quotaToDisplayAmount(token?.remain_quota, rate),
+  expired_time: timestampToDateTimeLocal(token?.expired_time),
+  model_limits: parseModelLimits(token?.model_limits),
+  allow_ips: token?.allow_ips || '',
+  subrouter_sort_mode: token?.subrouter_sort_mode || 'token_price_first',
+  official_key_max_discount: normalizeOfficialKeyMaxDiscount(token?.official_key_max_discount),
+});
+
 export default function Tokens() {
   const { t } = useTranslation();
+  const { site } = useSite();
   const { symbol, rate, code, usdRate } = useCurrency();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [newKey, setNewKey] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingToken, setEditingToken] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [expandedTokens, setExpandedTokens] = useState({});
   const [tokenModels, setTokenModels] = useState({});
+  const [modelOptions, setModelOptions] = useState([]);
+  const [createModelSearch, setCreateModelSearch] = useState('');
+  const [editModelSearch, setEditModelSearch] = useState('');
 
   // Key groups
   const [keyGroups, setKeyGroups] = useState([]);
@@ -35,8 +154,11 @@ export default function Tokens() {
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
+  const [createType, setCreateType] = useState('normal');
   const [createName, setCreateName] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState(0);
+  const [createOfficialKeyMaxDiscount, setCreateOfficialKeyMaxDiscount] = useState(0);
+  const [createControls, setCreateControls] = useState(emptyControlForm);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -54,6 +176,20 @@ export default function Tokens() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    getSiteModels()
+      .then((res) => {
+        if (!res.data.success) return;
+        const names = new Set();
+        (res.data.data || []).forEach((item) => {
+          const name = item?.model_name || item?.id || item?.name || item;
+          if (name) names.add(String(name));
+        });
+        setModelOptions([...names].sort());
+      })
+      .catch(() => {});
+  }, []);
+
   // Group by vendor_category
   const groupedByVendor = useMemo(() => {
     const map = {};
@@ -67,15 +203,42 @@ export default function Tokens() {
 
   const openCreateFromGroup = (group) => {
     if (group.is_unavailable) return;
+    setCreateType('normal');
     setSelectedGroupId(group.id);
     setCreateName(group.name);
+    setCreateOfficialKeyMaxDiscount(0);
+    setCreateControls(emptyControlForm());
+    setCreateModelSearch('');
     setShowCreate(true);
   };
 
   const openCreateDefault = () => {
+    setCreateType('normal');
     setSelectedGroupId(0);
     setCreateName('');
+    setCreateOfficialKeyMaxDiscount(0);
+    setCreateControls(emptyControlForm());
+    setCreateModelSearch('');
     setShowCreate(true);
+  };
+
+  const openCreateOfficial = () => {
+    setCreateType('official');
+    setSelectedGroupId(0);
+    setCreateName(t('tokens.officialKeyDefaultName'));
+    setCreateOfficialKeyMaxDiscount(0);
+    setCreateControls(emptyControlForm());
+    setCreateModelSearch('');
+    setShowCreate(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreate(false);
+    setCreateType('normal');
+    setSelectedGroupId(0);
+    setCreateOfficialKeyMaxDiscount(0);
+    setCreateControls(emptyControlForm());
+    setCreateModelSearch('');
   };
 
   const openGroupPricing = async (group) => {
@@ -110,13 +273,23 @@ export default function Tokens() {
     }
     setCreating(true);
     try {
-      const payload = { name: createName.trim() };
-      if (selectedGroupId > 0) payload.key_group_id = selectedGroupId;
+      const payload = { name: createName.trim(), type: createType };
+      if (createType === 'normal' && selectedGroupId > 0) payload.key_group_id = selectedGroupId;
+      const controlPayload = buildTokenControlPayload(createControls, rate, t, createType !== 'official');
+      if (!controlPayload) {
+        setCreating(false);
+        return;
+      }
+      Object.assign(payload, controlPayload);
+      if (createType === 'official') {
+        payload.official_key_max_discount = normalizeOfficialKeyMaxDiscount(createOfficialKeyMaxDiscount);
+      }
       const res = await createToken(payload);
       if (res.data.success) {
         setCreateName('');
-        setShowCreate(false);
-        setSelectedGroupId(0);
+        setCreateControls(emptyControlForm());
+        setCreateModelSearch('');
+        closeCreateModal();
         const createdKey = res.data.data?.key;
         if (createdKey) setNewKey(createdKey);
         await load();
@@ -147,6 +320,44 @@ export default function Tokens() {
         await load();
       }
     } catch (e) { /* interceptor */ }
+  };
+
+  const openEditToken = (token) => {
+    setEditingToken(token);
+    setEditForm(tokenToEditForm(token, rate));
+    setEditModelSearch('');
+  };
+
+  const closeEditToken = () => {
+    setEditingToken(null);
+    setEditForm(null);
+    setEditModelSearch('');
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    if (!editingToken || !editForm) return;
+    if (!String(editForm.name || '').trim()) {
+      toast.error(t('tokens.enterName'));
+      return;
+    }
+    const isOfficialToken = editingToken.type === 'official' || editingToken.group === 'dist_official';
+    const payload = buildTokenControlPayload(editForm, rate, t, !isOfficialToken);
+    if (!payload) return;
+    payload.name = String(editForm.name || '').trim();
+    if (isOfficialToken) {
+      payload.official_key_max_discount = normalizeOfficialKeyMaxDiscount(editForm.official_key_max_discount);
+    }
+    setSavingEdit(true);
+    try {
+      const res = await updateToken(editingToken.id, payload);
+      if (res.data.success) {
+        toast.success(t('tokens.tokenUpdated'));
+        closeEditToken();
+        await load();
+      }
+    } catch (err) { /* interceptor */ }
+    setSavingEdit(false);
   };
 
   const handleCopy = async (text) => {
@@ -211,9 +422,20 @@ export default function Tokens() {
   };
 
   const hasGroups = keyGroups.length > 0;
+  const officialChannelsEnabled = site?.show_official_channels !== false && site?.has_official_channels;
+  const normalTokens = tokens.filter((token) => token.type !== 'official' && token.group !== 'dist_official');
+  const officialTokens = tokens.filter((token) => token.type === 'official' || token.group === 'dist_official');
   const activeGroupPricing = activePricingGroup
     ? groupPricingCache[activePricingGroup.id] || null
     : null;
+  const formatOfficialDiscount = useCallback(
+    (value) => formatDiscountHint(value, t),
+    [t],
+  );
+  const selectedCreateGroup = selectedGroupId > 0
+    ? keyGroups.find((group) => group.id === selectedGroupId)
+    : null;
+  const createDiscountHint = formatOfficialDiscount(createOfficialKeyMaxDiscount);
   const filteredGroupPricingItems = useMemo(() => {
     const items = activeGroupPricing?.items || [];
     const keyword = groupPricingSearch.trim().toLowerCase();
@@ -273,6 +495,28 @@ export default function Tokens() {
           </button>
         </div>
 
+        {officialChannelsEnabled && (
+          <div className="mt-3">
+            <button
+              onClick={openCreateOfficial}
+              className="w-full glass rounded-xl p-4 flex items-center gap-4 hover:border-brand-500/50 border border-page-divider transition-all group text-left"
+            >
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M12 3.75l7.5 3.75v5.25c0 4.125-3.06 7.688-7.5 8.625-4.44-.937-7.5-4.5-7.5-8.625V7.5L12 3.75z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-page">{t('tokens.officialKeyGroup')}</p>
+                <p className="text-xs text-page-secondary mt-0.5">{t('tokens.officialKeyGroupDesc')}</p>
+              </div>
+              <span className="text-xs font-medium text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                {t('tokens.create')} →
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Vendor Category Sections */}
         {hasGroups && Object.entries(groupedByVendor).map(([vendor, groups]) => (
           <div key={vendor} className="mt-6">
@@ -300,18 +544,25 @@ export default function Tokens() {
 
       {/* ========== Create Modal ========== */}
       {showCreate && (
-        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }}>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeCreateModal}>
           <div className="glass rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-page mb-4">{t('tokens.createApiKey')}</h2>
-            {selectedGroupId > 0 && (() => {
-              const g = keyGroups.find((x) => x.id === selectedGroupId);
-              return g ? (
+            <h2 className="text-lg font-semibold text-page mb-4">
+              {createType === 'official' ? t('tokens.createOfficialKey') : t('tokens.createApiKey')}
+            </h2>
+            {createType === 'normal' && selectedGroupId > 0 && (() => {
+              return selectedCreateGroup ? (
                 <div className="mb-4 p-3 rounded-lg bg-page-surface border border-page-divider">
                   <p className="text-xs text-page-muted">{t('tokens.selectedGroup')}</p>
-                  <p className="text-sm font-medium text-page">{g.name}</p>
+                  <p className="text-sm font-medium text-page">{selectedCreateGroup.name}</p>
                 </div>
               ) : null;
             })()}
+            {createType === 'official' && (
+              <div className="mb-4 p-3 rounded-lg bg-page-surface border border-page-divider">
+                <p className="text-sm font-medium text-page">{t('tokens.officialKeyGroup')}</p>
+                <p className="text-xs text-page-secondary mt-1">{t('tokens.officialKeyCreateDesc')}</p>
+              </div>
+            )}
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.name')}</label>
@@ -325,12 +576,101 @@ export default function Tokens() {
                   required
                 />
               </div>
+              {createType === 'official' && (
+              <div>
+                <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.officialKeyMaxDiscount')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={createOfficialKeyMaxDiscount}
+                  onChange={(e) => setCreateOfficialKeyMaxDiscount(e.target.value)}
+                  className="input"
+                  placeholder={t('tokens.officialKeyMaxDiscountPlaceholder')}
+                />
+                <p className="text-xs text-page-muted mt-1.5">
+                  {createDiscountHint
+                    ? t('tokens.officialKeyMaxDiscountHint', { discount: createDiscountHint })
+                    : t('tokens.officialKeyMaxDiscountNoLimitHint')}
+                </p>
+              </div>
+              )}
+              <TokenControlFields
+                form={createControls}
+                onChange={(field, value) => setCreateControls((prev) => ({ ...prev, [field]: value }))}
+                modelOptions={modelOptions}
+                modelSearch={createModelSearch}
+                onModelSearchChange={setCreateModelSearch}
+                canLimitModels={createType !== 'official'}
+                showSortMode={createType === 'normal'}
+                currency={{ symbol, rate }}
+                t={t}
+              />
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => { setShowCreate(false); setSelectedGroupId(0); }} className="btn-secondary">
+                <button type="button" onClick={closeCreateModal} className="btn-secondary">
                   {t('tokens.cancel')}
                 </button>
                 <button type="submit" disabled={creating} className="btn-primary">
                   {creating ? t('tokens.creating') : t('tokens.create')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingToken && editForm && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={closeEditToken}>
+          <div className="glass rounded-2xl w-full max-w-2xl max-h-[88vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-page-divider">
+              <h2 className="text-lg font-semibold text-page">{t('tokens.editKey')}</h2>
+              <p className="text-sm text-page-secondary mt-1">{editingToken.name}</p>
+            </div>
+            <form onSubmit={handleEditSave}>
+              <div className="px-6 py-5 space-y-4 max-h-[62vh] overflow-y-auto">
+                <div>
+                  <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.name')}</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                    className="input"
+                    placeholder={t('tokens.namePlaceholder')}
+                    required
+                  />
+                </div>
+                {(editingToken.type === 'official' || editingToken.group === 'dist_official') && (
+                  <div>
+                    <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.officialKeyMaxDiscount')}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editForm.official_key_max_discount}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, official_key_max_discount: e.target.value }))}
+                      className="input"
+                      placeholder={t('tokens.officialKeyMaxDiscountPlaceholder')}
+                    />
+                  </div>
+                )}
+                <TokenControlFields
+                  form={editForm}
+                  onChange={(field, value) => setEditForm((prev) => ({ ...prev, [field]: value }))}
+                  modelOptions={modelOptions}
+                  modelSearch={editModelSearch}
+                  onModelSearchChange={setEditModelSearch}
+                  canLimitModels={!(editingToken.type === 'official' || editingToken.group === 'dist_official')}
+                  showSortMode={!(editingToken.type === 'official' || editingToken.group === 'dist_official')}
+                  currency={{ symbol, rate }}
+                  t={t}
+                />
+              </div>
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-page-divider bg-page-surface/40">
+                <button type="button" onClick={closeEditToken} className="btn-secondary">
+                  {t('tokens.cancel')}
+                </button>
+                <button type="submit" disabled={savingEdit} className="btn-primary">
+                  {savingEdit ? t('tokens.saving') : t('tokens.save')}
                 </button>
               </div>
             </form>
@@ -399,126 +739,41 @@ export default function Tokens() {
         </div>
       )}
 
-      {/* ========== Section 2: My API Keys ========== */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold text-page">{t('tokens.myKeys')}</h2>
-        </div>
-
-        {tokens.length === 0 ? (
-          <div className="glass rounded-2xl p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-page-surface flex items-center justify-center">
-              <svg className="w-6 h-6 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-            </div>
-            <p className="text-sm text-page-secondary">{t('tokens.noKeys')}</p>
-            <p className="text-xs text-page-muted mt-1">{t('tokens.noKeysHint')}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {tokens.map((token) => (
-              <div key={token.id} className="glass-sm rounded-xl p-5">
-                <div className="flex items-center gap-4">
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-page">{token.name}</p>
-                  </div>
-                  <span className="text-xs text-page-muted hidden md:block">
-                    {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggleSupportedModels(token.id)}
-                      className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
-                    >
-                      {expandedTokens[token.id] ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
-                    </button>
-                    <button
-                      onClick={() => handleToggle(token)}
-                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
-                        token.status === 1
-                          ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
-                          : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
-                      }`}
-                    >
-                      {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(token)}
-                      className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
-                    >
-                      {t('tokens.delete')}
-                    </button>
-                  </div>
-                </div>
-                {token.key && (
-                  <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
-                    <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
-                      sk-{token.key}
-                    </code>
-                    <button
-                      onClick={() => handleCopy('sk-' + token.key)}
-                      className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
-                    >
-                      {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
-                    </button>
-                  </div>
-                )}
-                {expandedTokens[token.id] && (
-                  <div className="mt-3 rounded-xl border border-page-divider bg-page-surface/50 px-4 py-3">
-                    {tokenModels[token.id]?.loading ? (
-                      <div className="flex items-center gap-2 text-sm text-page-secondary">
-                        <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
-                        <span>{t('tokens.loadingSupportedModels')}</span>
-                      </div>
-                    ) : tokenModels[token.id]?.error ? (
-                      <p className="text-sm text-page-danger">{t('tokens.loadSupportedModelsFailed')}</p>
-                    ) : (
-                      <>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium text-page">
-                            {t('tokens.supportedModels')} ({tokenModels[token.id]?.count || 0})
-                          </p>
-                          {tokenModels[token.id]?.restricted_by_models && (
-                            <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
-                              {t('tokens.restrictedByModels')}
-                            </span>
-                          )}
-                          {tokenModels[token.id]?.restricted_by_providers && (
-                            <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
-                              {t('tokens.restrictedByProviders')}
-                            </span>
-                          )}
-                        </div>
-                        {tokenModels[token.id]?.provider_names?.length > 0 && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-page-muted">{t('tokens.supportedProviders')}</span>
-                            {tokenModels[token.id].provider_names.map((name) => (
-                              <span key={name} className="px-2 py-0.5 rounded-full text-[11px] bg-page-inset text-page-secondary">
-                                {name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {tokenModels[token.id]?.models?.length > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {tokenModels[token.id].models.map((modelName) => (
-                              <code key={modelName} className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-page-inset text-page-secondary">
-                                {modelName}
-                              </code>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-3 text-sm text-page-muted">{t('tokens.noSupportedModels')}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+      <div className="space-y-8">
+        <TokenListSection
+          title={t('tokens.myKeys')}
+          tokens={normalTokens}
+          allTokensEmpty={tokens.length === 0}
+          copiedId={copiedId}
+          expandedTokens={expandedTokens}
+          tokenModels={tokenModels}
+          onCopy={handleCopy}
+          onDelete={setDeleteConfirm}
+          onEdit={openEditToken}
+          onToggle={handleToggle}
+          onToggleSupportedModels={handleToggleSupportedModels}
+          formatOfficialDiscount={formatOfficialDiscount}
+          currency={{ symbol, rate }}
+          t={t}
+        />
+        {officialChannelsEnabled && (
+          <TokenListSection
+            title={t('tokens.myOfficialKeys')}
+            tokens={officialTokens}
+            allTokensEmpty={tokens.length === 0}
+            copiedId={copiedId}
+            expandedTokens={expandedTokens}
+            tokenModels={tokenModels}
+            onCopy={handleCopy}
+            onDelete={setDeleteConfirm}
+            onEdit={openEditToken}
+            onToggle={handleToggle}
+            onToggleSupportedModels={handleToggleSupportedModels}
+            formatOfficialDiscount={formatOfficialDiscount}
+            currency={{ symbol, rate }}
+            t={t}
+            official
+          />
         )}
       </div>
 
@@ -528,6 +783,378 @@ export default function Tokens() {
 
       <div className="mt-10">
         <DownloadCatalog />
+      </div>
+    </div>
+  );
+}
+
+function TokenListSection({
+  title,
+  tokens,
+  allTokensEmpty,
+  copiedId,
+  expandedTokens,
+  tokenModels,
+  onCopy,
+  onDelete,
+  onEdit,
+  onToggle,
+  onToggleSupportedModels,
+  formatOfficialDiscount,
+  currency,
+  t,
+  official = false,
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-heading font-semibold text-page">{title}</h2>
+      </div>
+
+      {tokens.length === 0 ? (
+        <div className="glass rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-page-surface flex items-center justify-center">
+            <svg className="w-6 h-6 text-page-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+          <p className="text-sm text-page-secondary">
+            {allTokensEmpty ? t('tokens.noKeys') : official ? t('tokens.noOfficialKeys') : t('tokens.noNormalKeys')}
+          </p>
+          <p className="text-xs text-page-muted mt-1">{t('tokens.noKeysHint')}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tokens.map((token) => (
+            <div key={token.id} className="glass-sm rounded-xl p-5">
+              <div className="flex items-center gap-4">
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${token.status === 1 ? 'bg-green-500' : 'bg-page-muted'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-page">{token.name}</p>
+                    {official && (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/10 text-page-success">
+                        {t('tokens.officialKeyBadge')}
+                      </span>
+                    )}
+                  </div>
+                  {official && formatOfficialDiscount(token.official_key_max_discount) && (
+                    <p className="text-xs text-page-muted mt-0.5">
+                      {t('tokens.officialKeyTokenMaxDiscount', {
+                        discount: formatOfficialDiscount(token.official_key_max_discount),
+                      })}
+                    </p>
+                  )}
+                  <TokenControlSummary token={token} currency={currency} t={t} />
+                </div>
+                <span className="text-xs text-page-muted hidden md:block">
+                  {token.created_time ? new Date(token.created_time * 1000).toLocaleDateString() : ''}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onToggleSupportedModels(token.id)}
+                    className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
+                  >
+                    {expandedTokens[token.id] ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
+                  </button>
+                  <button
+                    onClick={() => onToggle(token)}
+                    className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                      token.status === 1
+                        ? 'border-green-500/30 text-page-success hover:bg-green-500/10'
+                        : 'border-page-divider text-page-secondary hover:bg-page-surface-hover'
+                    }`}
+                  >
+                    {token.status === 1 ? t('tokens.enabled') : t('tokens.disabled')}
+                  </button>
+                  <button
+                    onClick={() => onEdit(token)}
+                    className="px-3 py-1 text-xs rounded-lg border border-page-divider text-page-secondary hover:bg-page-surface-hover transition-colors"
+                  >
+                    {t('tokens.edit')}
+                  </button>
+                  <button
+                    onClick={() => onDelete(token)}
+                    className="px-3 py-1 text-xs rounded-lg border border-red-500/20 text-page-danger hover:bg-red-500/10 transition-colors"
+                  >
+                    {t('tokens.delete')}
+                  </button>
+                </div>
+              </div>
+              {token.key && (
+                <div className="mt-3 flex items-center gap-2 bg-page-inset rounded-lg px-3 py-2">
+                  <code className="text-xs font-mono text-page-muted flex-1 break-all select-all">
+                    sk-{token.key}
+                  </code>
+                  <button
+                    onClick={() => onCopy('sk-' + token.key)}
+                    className="flex-shrink-0 px-2.5 py-1 text-xs rounded-md bg-page-surface text-page-secondary hover:bg-page-surface-hover hover:text-page transition-colors"
+                  >
+                    {copiedId === 'sk-' + token.key ? t('tokens.copied') : t('tokens.copy')}
+                  </button>
+                </div>
+              )}
+              {expandedTokens[token.id] && (
+                <div className="mt-3 rounded-xl border border-page-divider bg-page-surface/50 px-4 py-3">
+                  {tokenModels[token.id]?.loading ? (
+                    <div className="flex items-center gap-2 text-sm text-page-secondary">
+                      <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+                      <span>{t('tokens.loadingSupportedModels')}</span>
+                    </div>
+                  ) : tokenModels[token.id]?.error ? (
+                    <p className="text-sm text-page-danger">{t('tokens.loadSupportedModelsFailed')}</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-page">
+                          {t('tokens.supportedModels')} ({tokenModels[token.id]?.count || 0})
+                        </p>
+                        {tokenModels[token.id]?.restricted_by_models && (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
+                            {t('tokens.restrictedByModels')}
+                          </span>
+                        )}
+                        {tokenModels[token.id]?.restricted_by_providers && (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
+                            {t('tokens.restrictedByProviders')}
+                          </span>
+                        )}
+                      </div>
+                      {tokenModels[token.id]?.provider_names?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-page-muted">{t('tokens.supportedProviders')}</span>
+                          {tokenModels[token.id].provider_names.map((name) => (
+                            <span key={name} className="px-2 py-0.5 rounded-full text-[11px] bg-page-inset text-page-secondary">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {tokenModels[token.id]?.models?.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {tokenModels[token.id].models.map((modelName) => (
+                            <code key={modelName} className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-page-inset text-page-secondary">
+                              {modelName}
+                            </code>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm text-page-muted">{t('tokens.noSupportedModels')}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TokenControlSummary({ token, currency, t }) {
+  const { symbol = '$', rate = 1 } = currency || {};
+  const modelCount = parseModelLimits(token.model_limits).length;
+  const quotaText = token.unlimited_quota
+    ? t('tokens.unlimitedQuota')
+    : t('tokens.quotaSummary', {
+        amount: `${symbol}${((Number(token.remain_quota || 0) / Q) * Number(rate || 1)).toFixed(2)}`,
+      });
+  const expiryText = token.expired_time && token.expired_time > 0
+    ? t('tokens.expireAt', { time: new Date(token.expired_time * 1000).toLocaleString() })
+    : t('tokens.neverExpire');
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      <span className="px-2 py-0.5 rounded-full text-[11px] bg-page-surface text-page-secondary">
+        {quotaText}
+      </span>
+      <span className="px-2 py-0.5 rounded-full text-[11px] bg-page-surface text-page-secondary">
+        {expiryText}
+      </span>
+      {modelCount > 0 && (
+        <span className="px-2 py-0.5 rounded-full text-[11px] bg-brand-500/10 text-brand-500">
+          {t('tokens.modelLimitedCount', { count: modelCount })}
+        </span>
+      )}
+      {String(token.allow_ips || '').trim() && (
+        <span className="px-2 py-0.5 rounded-full text-[11px] bg-page-surface text-page-secondary">
+          {t('tokens.ipLimited')}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TokenControlFields({
+  form,
+  onChange,
+  modelOptions,
+  modelSearch,
+  onModelSearchChange,
+  canLimitModels,
+  showSortMode,
+  currency,
+  t,
+}) {
+  const { symbol = '$' } = currency || {};
+  const selectedModels = parseModelLimits(form.model_limits);
+  const filteredModels = (modelOptions || [])
+    .filter((name) => !selectedModels.includes(name))
+    .filter((name) => !modelSearch.trim() || name.toLowerCase().includes(modelSearch.trim().toLowerCase()))
+    .slice(0, 40);
+
+  const setExpiryRelative = (seconds) => {
+    if (!seconds) {
+      onChange('expired_time', '');
+      return;
+    }
+    onChange('expired_time', timestampToDateTimeLocal(Math.ceil(Date.now() / 1000) + seconds));
+  };
+
+  const addModel = (modelName) => {
+    const name = String(modelName || '').trim();
+    if (!name || selectedModels.includes(name)) return;
+    onChange('model_limits', [...selectedModels, name]);
+    onModelSearchChange('');
+  };
+
+  const removeModel = (modelName) => {
+    onChange('model_limits', selectedModels.filter((name) => name !== modelName));
+  };
+
+  return (
+    <div className="space-y-4 border-t border-page-divider pt-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.quotaLimit')}</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            disabled={form.unlimited_quota}
+            value={form.quota_amount}
+            onChange={(e) => onChange('quota_amount', e.target.value)}
+            className="input disabled:opacity-50"
+            placeholder={`${symbol} ${t('tokens.quotaPlaceholder')}`}
+          />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {[1, 10, 50, 100].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                disabled={form.unlimited_quota}
+                onClick={() => onChange('quota_amount', String(amount))}
+                className="px-2 py-1 text-[11px] rounded-md border border-page-divider text-page-secondary hover:bg-page-surface-hover disabled:opacity-50"
+              >
+                {symbol}{amount}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.expireTime')}</label>
+          <input
+            type="datetime-local"
+            value={form.expired_time}
+            onChange={(e) => onChange('expired_time', e.target.value)}
+            className="input"
+          />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => setExpiryRelative(0)} className="px-2 py-1 text-[11px] rounded-md border border-page-divider text-page-secondary hover:bg-page-surface-hover">
+              {t('tokens.neverExpire')}
+            </button>
+            <button type="button" onClick={() => setExpiryRelative(24 * 60 * 60)} className="px-2 py-1 text-[11px] rounded-md border border-page-divider text-page-secondary hover:bg-page-surface-hover">
+              {t('tokens.oneDay')}
+            </button>
+            <button type="button" onClick={() => setExpiryRelative(30 * 24 * 60 * 60)} className="px-2 py-1 text-[11px] rounded-md border border-page-divider text-page-secondary hover:bg-page-surface-hover">
+              {t('tokens.oneMonth')}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <label className="flex items-center justify-between gap-4 rounded-xl border border-page-divider bg-page-surface px-3 py-2.5">
+        <span className="text-sm font-medium text-page">{t('tokens.unlimitedQuota')}</span>
+        <input
+          type="checkbox"
+          checked={!!form.unlimited_quota}
+          onChange={(e) => onChange('unlimited_quota', e.target.checked)}
+          className="h-4 w-4 accent-brand-500"
+        />
+      </label>
+
+      {showSortMode && (
+        <div>
+          <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.routeSortMode')}</label>
+          <select
+            className="input"
+            value={form.subrouter_sort_mode || 'token_price_first'}
+            onChange={(e) => onChange('subrouter_sort_mode', e.target.value)}
+          >
+            <option value="token_price_first">{t('tokens.tokenPriceFirst')}</option>
+            <option value="per_call_price_first">{t('tokens.perCallPriceFirst')}</option>
+          </select>
+        </div>
+      )}
+
+      {canLimitModels && (
+        <div>
+          <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.modelLimits')}</label>
+          <div className="rounded-xl border border-page-divider bg-page-surface px-3 py-2">
+            {selectedModels.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {selectedModels.map((modelName) => (
+                  <span key={modelName} className="inline-flex items-center gap-1 rounded-full bg-brand-500/10 px-2 py-0.5 text-[11px] text-brand-500">
+                    {modelName}
+                    <button type="button" onClick={() => removeModel(modelName)} className="text-brand-500 hover:text-page-danger">
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <input
+              type="text"
+              value={modelSearch}
+              onChange={(e) => onModelSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addModel(modelSearch);
+                }
+              }}
+              className="w-full bg-transparent text-sm text-page outline-none"
+              placeholder={t('tokens.modelSearchPlaceholder')}
+            />
+            {modelSearch.trim() && filteredModels.length > 0 && (
+              <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-page-divider bg-page-inset">
+                {filteredModels.map((modelName) => (
+                  <button
+                    key={modelName}
+                    type="button"
+                    onClick={() => addModel(modelName)}
+                    className="block w-full px-3 py-2 text-left text-xs text-page-secondary hover:bg-page-surface-hover hover:text-page"
+                  >
+                    {modelName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-page-label mb-1.5">{t('tokens.ipWhitelist')}</label>
+        <textarea
+          rows={3}
+          value={form.allow_ips}
+          onChange={(e) => onChange('allow_ips', e.target.value)}
+          className="input resize-y"
+          placeholder={t('tokens.ipWhitelistPlaceholder')}
+        />
       </div>
     </div>
   );
@@ -634,6 +1261,7 @@ function GroupPricingModal({
   const displayGroup = pricingData?.group || group;
   const summary = pricingData?.summary;
   const hasItems = (pricingData?.items || []).length > 0;
+  const regionRestricted = pricingData?.region_restricted === true;
   const { symbol, rate } = currency || {};
 
   return (
@@ -727,11 +1355,15 @@ function GroupPricingModal({
             </div>
           ) : !hasItems ? (
             <div className="text-sm text-page-secondary">
-              {t('tokens.groupPricingNoData')}
+              {regionRestricted
+                ? t('pricing.regionRestricted')
+                : t('tokens.groupPricingNoData')}
             </div>
           ) : items.length === 0 ? (
             <div className="text-sm text-page-secondary">
-              {t('tokens.groupPricingNoMatch')}
+              {regionRestricted && search.trim()
+                ? t('pricing.regionRestricted')
+                : t('tokens.groupPricingNoMatch')}
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Tokens = lazy(() => import('./pages/Tokens'));
 const Packages = lazy(() => import('./pages/Packages'));
 const Pricing = lazy(() => import('./pages/Pricing'));
+const OfficialChannels = lazy(() => import('./pages/OfficialChannels'));
 const AppMarket = lazy(() => import('./pages/AppMarket'));
 const Topup = lazy(() => import('./pages/Topup'));
 const Logs = lazy(() => import('./pages/Logs'));
@@ -36,6 +37,22 @@ function AppMarketRoute() {
   return <AppMarket />;
 }
 
+function OfficialChannelsRoute() {
+  const { site, loading } = useSite();
+  const showOfficialChannels =
+    site?.show_official_channels !== false && site?.has_official_channels;
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!showOfficialChannels) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <OfficialChannels />;
+}
+
 function ThemedRoutes() {
   const { Home, Layout } = useTheme();
 
@@ -46,6 +63,8 @@ function ThemedRoutes() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/official-channels" element={<OfficialChannelsRoute />} />
+          <Route path="/official-channels/:channelId" element={<OfficialChannelsRoute />} />
           <Route path="/packages" element={<Packages />} />
           <Route path="/apps" element={<AppMarketRoute />} />
           <Route path="/sub-site" element={<SubDistributor />} />

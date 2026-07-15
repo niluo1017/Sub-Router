@@ -1,20 +1,8 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { SHARED_API_ENDPOINTS } from '../constants/apiEndpoints';
 import { useSite } from '../context/SiteContext';
-
-const SHARED_API_ENDPOINTS = [
-  {
-    id: 'overseas-direct',
-    labelKey: 'home.apiEndpointOverseasDirect',
-    url: 'https://aiapi.up.railway.app',
-  },
-  {
-    id: 'overseas-cdn',
-    labelKey: 'home.apiEndpointOverseasCdn',
-    url: 'https://ai.orbitlink.me',
-  },
-];
 
 const normalizeEndpoint = (value = '') => {
   const raw = String(value || '').trim();

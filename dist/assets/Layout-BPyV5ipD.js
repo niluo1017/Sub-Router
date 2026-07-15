@@ -1,1 +1,0 @@
-import{j as r}from"./index-CaSyLVEB.js";import{B as o}from"./BrandLayout-DzDDML_5.js";import"./navigation-B6VNf9w6.js";import"./LegalLinks-DCNy8w1j.js";import"./maoqiu-ai-D0tNEjuk.js";import"./circle-user-jGaRxFAI.js";import"./menu-BSusBsKo.js";import"./arrow-right-B4CEmIa8.js";function e(){return r.jsx(o,{variant:"aurora"})}export{e as default};
