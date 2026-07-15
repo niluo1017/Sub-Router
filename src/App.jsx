@@ -19,6 +19,7 @@ const Tasks = lazy(() => import('./pages/Tasks'));
 const SubDistributor = lazy(() => import('./pages/SubDistributor'));
 const Account = lazy(() => import('./pages/Account'));
 const LegalDocument = lazy(() => import('./pages/LegalDocument'));
+const UsageDocs = lazy(() => import('./pages/UsageDocs'));
 
 const Loading = () => (
   <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -63,6 +64,7 @@ function ThemedRoutes() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/docs" element={<UsageDocs />} />
           <Route path="/official-channels" element={<OfficialChannelsRoute />} />
           <Route path="/official-channels/:channelId" element={<OfficialChannelsRoute />} />
           <Route path="/packages" element={<Packages />} />
