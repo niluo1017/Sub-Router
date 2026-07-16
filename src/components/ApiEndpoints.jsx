@@ -83,10 +83,15 @@ export default function ApiEndpoints({ hideSite = false }) {
               onClick={() => handleCopy(endpoint.url)}
               className="rounded-xl border border-page-divider bg-page-inset/40 px-4 py-3 text-left transition-colors hover:bg-page-surface-hover"
             >
-              <div className="mb-1 flex items-center gap-2">
+              <div className="mb-1 flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-medium text-page-label">
                   {endpoint.label}
                 </span>
+                {endpoint.recommended && (
+                  <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
+                    {t('home.apiEndpointRecommended', '强烈推荐')}
+                  </span>
+                )}
                 {endpoint.apiOnly && (
                   <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-400">
                     {t('home.apiEndpointApiOnly')}

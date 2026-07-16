@@ -191,7 +191,7 @@ const ConfigExporter = ({ tokens = [] }) => {
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedTool, setSelectedTool] = useState('claudecode');
   const [selectedCCSwitchApp, setSelectedCCSwitchApp] = useState('codex');
-  const [selectedEndpointId, setSelectedEndpointId] = useState('overseas-cdn');
+  const [selectedEndpointId, setSelectedEndpointId] = useState('overseas-direct');
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -839,8 +839,15 @@ print(message.content[0].text)`;
                       : 'border-page-divider bg-page-inset/40 text-page-secondary hover:bg-page-surface-hover'
                   }`}
                 >
-                  <div className="text-xs font-semibold">
-                    {t(endpoint.nameKey)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold">
+                      {t(endpoint.nameKey)}
+                    </span>
+                    {endpoint.recommended && (
+                      <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
+                        {t('home.apiEndpointRecommended', '强烈推荐')}
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 text-[11px] text-page-muted">
                     {t(endpoint.descKey)}
