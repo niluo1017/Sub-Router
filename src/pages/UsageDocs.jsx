@@ -105,22 +105,71 @@ export default function UsageDocs() {
         <p className="mt-2">Anthropic 原生格式（Claude 官方 SDK 用户）：Base URL 直接填线路地址（不带 /v1）。</p>
       </Step>
 
-      <Step n={4} title="接入常用工具">
-        <p className="font-medium text-page">Claude Code</p>
-        <p>设置两个环境变量后正常启动 <code className="font-mono text-xs">claude</code> 即可：</p>
+      <Step n={4} title="接入 Claude Code">
+        <p>Claude Code 通过两个环境变量指向本站即可，把 <code className="font-mono text-xs">sk-你的密钥</code> 换成你的密钥：</p>
         <CodeBlock
-          code={`export ANTHROPIC_BASE_URL="https://你的Base URL"
+          label="macOS / Linux — 写入 ~/.zshrc 或 ~/.bashrc"
+          code={`export ANTHROPIC_BASE_URL="https://test1122.up.railway.app"
 export ANTHROPIC_AUTH_TOKEN="sk-你的密钥"`}
         />
+        <CodeBlock
+          label="Windows PowerShell"
+          code={`[Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://test1122.up.railway.app", "User")
+[Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "sk-你的密钥", "User")`}
+        />
+        <p>然后新开终端运行 <code className="font-mono text-xs">claude</code>。进入后用 <code className="font-mono text-xs">/model</code> 命令切换模型，如 <code className="font-mono text-xs">claude-opus-4-8</code>、<code className="font-mono text-xs">claude-sonnet-5</code>。国内网络连不上就把 BASE_URL 换成大陆线路 <code className="font-mono text-xs">https://ai.orbitlink.me</code>。</p>
+      </Step>
 
-        <p className="font-medium text-page mt-4">Cursor</p>
-        <p>Settings → Models → OpenAI API Key：填入密钥，Override Base URL 填 <code className="font-mono text-xs">https://你的Base URL/v1</code>，再添加模型名（如 claude-opus-4-8）。</p>
+      <Step n={5} title="接入 Codex（OpenAI Codex CLI）">
+        <p>Codex 支持自定义模型服务商。编辑配置文件 <code className="font-mono text-xs">~/.codex/config.toml</code>，加入本站作为服务商：</p>
+        <CodeBlock
+          label="~/.codex/config.toml"
+          code={`model = "gpt-5.6-sol"
+model_provider = "linglong"
 
-        <p className="font-medium text-page mt-4">CC Switch</p>
-        <p>新增一个配置：Base URL 填线路地址，API Key 填你的密钥，选择模型即可一键切换使用。</p>
+[model_providers.linglong]
+name = "灵珑AI"
+base_url = "https://test1122.up.railway.app/v1"
+env_key = "LINGLONG_API_KEY"`}
+        />
+        <p>再设置环境变量放你的密钥，然后正常运行 <code className="font-mono text-xs">codex</code>：</p>
+        <CodeBlock code={`export LINGLONG_API_KEY="sk-你的密钥"`} />
+        <p>模型名可换成任意支持的对话模型（gpt-5.6-sol、gpt-5.5-pro、claude-opus-4-8 等）。</p>
+      </Step>
 
-        <p className="font-medium text-page mt-4">沉浸式翻译 / LobeChat / NextChat</p>
-        <p>翻译服务或模型服务选「自定义 / OpenAI 兼容」，接口地址填 <code className="font-mono text-xs">https://你的Base URL/v1/chat/completions</code>，填入密钥即可。</p>
+      <Step n={6} title="接入 CC Switch（一键切换配置）">
+        <p>CC Switch 用来给 Claude Code 快速切换不同服务商。打开 CC Switch，点「新增配置」，按下表填写：</p>
+        <div className="rounded-xl border border-page-divider overflow-hidden">
+          <table className="w-full text-sm">
+            <tbody>
+              <tr className="border-b border-page-divider"><td className="px-4 py-2.5 text-page-muted w-32">配置名称</td><td className="px-4 py-2.5 text-page">灵珑AI（自定义）</td></tr>
+              <tr className="border-b border-page-divider"><td className="px-4 py-2.5 text-page-muted">Base URL</td><td className="px-4 py-2.5 font-mono text-xs text-page-label">https://test1122.up.railway.app</td></tr>
+              <tr className="border-b border-page-divider"><td className="px-4 py-2.5 text-page-muted">API Key</td><td className="px-4 py-2.5 font-mono text-xs text-page-label">sk-你的密钥</td></tr>
+              <tr><td className="px-4 py-2.5 text-page-muted">模型</td><td className="px-4 py-2.5 font-mono text-xs text-page-label">claude-opus-4-8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>保存后在 CC Switch 里选中这条配置即可一键切换，之后启动的 Claude Code 就会走本站。国内网络把 Base URL 换成 <code className="font-mono text-xs">https://ai.orbitlink.me</code>。</p>
+      </Step>
+
+      <Step n={7} title="调用图像 / 生图模型">
+        <p>本站的图像模型（<code className="font-mono text-xs">gpt-image-2</code>、<code className="font-mono text-xs">nano-banana-pro-2k</code>、<code className="font-mono text-xs">gemini-3-pro-image-preview</code> 等）用 OpenAI 兼容的图像接口调用，端点是 <code className="font-mono text-xs">/v1/images/generations</code>：</p>
+        <CodeBlock
+          label="curl · 生图"
+          code={`curl https://test1122.up.railway.app/v1/images/generations \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer sk-你的密钥" \\
+  -d '{
+    "model": "gpt-image-2",
+    "prompt": "一只在星空下奔跑的柴犬，插画风格",
+    "size": "1024x1024"
+  }'`}
+        />
+        <p>在支持「图像生成」的客户端（如 LobeChat、NextChat）里，服务商选 OpenAI 兼容、地址填线路地址、密钥填你的 Key，模型选上面任意图像模型，就能在对话框里直接出图。视频模型（<code className="font-mono text-xs">seedance-2.0</code>、<code className="font-mono text-xs">grok-video</code>）同理，按次计费，具体参数见 <Link to="/pricing" className="text-brand-500 hover:text-brand-600">定价页</Link>。</p>
+      </Step>
+
+      <Step n={8} title="接入沉浸式翻译 / LobeChat / NextChat">
+        <p>这类工具选「自定义 / OpenAI 兼容」服务，接口地址填 <code className="font-mono text-xs">https://test1122.up.railway.app/v1/chat/completions</code>（国内用 <code className="font-mono text-xs">https://ai.orbitlink.me/v1/chat/completions</code>），填入密钥，模型选你要的即可。沉浸式翻译推荐用 <code className="font-mono text-xs">gemini-3.5-flash</code> 或 <code className="font-mono text-xs">deepseek-v4-flash</code>，快且便宜。</p>
       </Step>
 
       <div className="rounded-xl border border-page-divider bg-page-surface/50 p-5 text-sm text-page-secondary">
