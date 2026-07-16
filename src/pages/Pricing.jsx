@@ -1,10 +1,46 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, Copy, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { getSiteModels } from '../api';
 import { useCurrency } from '../context/SiteContext';
 import { getOfficialPrice } from '../utils/officialEquiv';
 import { formatPricingDetailRows, hasVideoPricingDetails } from '../utils/pricingDetails';
+
+function CopyModelButton({ value }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e) => {
+    e.stopPropagation();
+    const text = String(value || '');
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    toast.success(t('pricing.modelNameCopied', '已复制模型名'));
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title={t('pricing.copyModelName', '复制模型名')}
+      className="flex-shrink-0 p-1 rounded-md text-page-muted hover:bg-page-surface-hover hover:text-brand-500 transition-colors"
+    >
+      {copied ? <Check className="w-3.5 h-3.5 text-page-success" /> : <Copy className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
 
 const MODEL_TYPE_OPTIONS = [
   { value: '', labelKey: 'pricing.allTypes' },
@@ -459,7 +495,10 @@ export default function Pricing() {
               <div key={modelKey} className="glass-sm rounded-xl border border-page-divider p-4 flex flex-col gap-3 hover:border-brand-500/40 transition-all">
                 {/* Header: name + vendor */}
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-mono text-sm text-page break-all leading-tight">{m.display_name || m.model_name}</span>
+                  <div className="flex items-start gap-1 min-w-0">
+                    <span className="font-mono text-sm text-page break-all leading-tight">{m.display_name || m.model_name}</span>
+                    <CopyModelButton value={m.model_name || m.display_name} />
+                  </div>
                   {m.vendor_name && (
                     <span className="inline-flex items-center flex-shrink-0 rounded-md bg-page-surface px-2 py-0.5 text-[11px] font-medium text-page-secondary whitespace-nowrap">
                       {m.vendor_name}
