@@ -822,67 +822,6 @@ print(message.content[0].text)`;
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
-              {t('config.selectKey')}
-            </label>
-            <ThemedSelect
-              value={selectedToken?.id ?? null}
-              onChange={setSelectedTokenId}
-              options={tokenOptions}
-              placeholder={t('config.selectKey')}
-              emptyLabel={t('config.noKeyDesc')}
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-xs font-medium text-page-label mb-2">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-              {t('config.selectModel')}
-            </label>
-            <ThemedSelect
-              value={selectedModel}
-              onChange={setSelectedModel}
-              options={modelOptions}
-              placeholder={
-                loadingModels
-                  ? t('config.loadingModels')
-                  : t('config.selectModel')
-              }
-              disabled={loadingModels || modelOptions.length === 0}
-              emptyLabel={
-                modelsError
-                  ? t('tokens.loadSupportedModelsFailed')
-                  : t('tokens.noSupportedModels')
-              }
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-xs font-medium text-page-label mb-2">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
@@ -915,40 +854,16 @@ print(message.content[0].text)`;
           </div>
 
           <div className="rounded-xl border border-page-divider bg-page-surface/50 px-4 py-4 space-y-3">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <p className="text-sm font-semibold text-page">
-                  {t('config.apiUrlTitle')}
-                </p>
-                <p className="text-xs text-page-muted mt-1">
-                  {t('config.apiUrlHint')}
-                </p>
-              </div>
-              <button
-                onClick={() =>
-                  handleCopyValue(
-                    getSelectedToolBaseUrl(),
-                    'config.apiUrlCopied',
-                  )
-                }
-                className="btn-secondary px-4 py-2"
-              >
-                {t('config.copyCurrentApiUrl')}
-              </button>
+            <div>
+              <p className="text-sm font-semibold text-page">
+                {t('config.apiUrlTitle')}
+              </p>
+              <p className="text-xs text-page-muted mt-1">
+                {t('config.apiUrlHint')}
+              </p>
             </div>
 
             <div className="space-y-2">
-              <div className="rounded-lg bg-page-inset/60 px-3 py-2">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className="text-[11px] font-medium text-page-label">
-                    {t('config.currentToolApiUrl')}
-                  </span>
-                  <code className="text-[11px] text-page-muted break-all">
-                    {getSelectedToolBaseUrl()}
-                  </code>
-                </div>
-              </div>
-
               <div className="grid gap-2 md:grid-cols-2">
                 <button
                   onClick={() =>
