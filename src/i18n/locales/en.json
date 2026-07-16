@@ -92,6 +92,7 @@
     "home.apiEndpointOverseasCdn": "Mainland line",
     "home.apiEndpointOverseasCdnNote": "Non-overseas route, works on mainland networks",
     "home.apiEndpointApiOnly": "API only",
+    "home.apiEndpointRecommended": "Recommended",
 
     "login.welcomeBack": "Welcome Back",
     "login.signInTo": "Sign in to {{name}}",

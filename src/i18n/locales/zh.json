@@ -92,6 +92,7 @@
     "home.apiEndpointOverseasCdn": "大陆线路",
     "home.apiEndpointOverseasCdnNote": "非海外线路，大陆网络可用",
     "home.apiEndpointApiOnly": "仅支持 API",
+    "home.apiEndpointRecommended": "强烈推荐",
 
     "login.welcomeBack": "欢迎回来",
     "login.signInTo": "登录到 {{name}}",
