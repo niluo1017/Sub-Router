@@ -983,27 +983,6 @@ print(message.content[0].text)`;
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-page-label mb-2 block">
-              {t('config.selectTool')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {TOOLS.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => setSelectedTool(tool.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    selectedTool === tool.id
-                      ? 'bg-brand-500 text-white shadow-sm'
-                      : 'surface text-page-secondary hover:bg-page-surface-hover'
-                  }`}
-                >
-                  {tool.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-4 space-y-4">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
@@ -1067,86 +1046,6 @@ print(message.content[0].text)`;
               </code>
             </div>
           </div>
-        </div>
-
-        <div className="border-t border-page-divider">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-page-inset/70">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-              </div>
-              <span className="text-xs text-page-muted ml-1 truncate">
-                {selectedToolMeta.path}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleCopy}
-                disabled={!config}
-                className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
-                title={t(
-                  selectedTool === 'ccswitch'
-                    ? 'config.copyImportLink'
-                    : 'config.copy',
-                )}
-              >
-                {copied ? (
-                  <svg
-                    className="w-3.5 h-3.5 text-green-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                )}
-              </button>
-              <button
-                onClick={handleDownload}
-                disabled={!config}
-                className="p-1.5 rounded-md hover:bg-page-surface-hover transition-colors text-page-muted hover:text-page disabled:opacity-50 disabled:cursor-not-allowed"
-                title={t('config.download')}
-              >
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <pre className="p-4 text-xs leading-relaxed overflow-x-auto max-h-72 font-mono text-page whitespace-pre-wrap break-all">
-            <code>{config || t('tokens.noSupportedModels')}</code>
-          </pre>
         </div>
       </div>
 
