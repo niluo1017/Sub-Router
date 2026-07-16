@@ -67,15 +67,23 @@ export default function UsageDocs() {
 
       <Step n={1} title="获取 API 密钥">
         <p>
-          前往 <Link to="/tokens" className="text-brand-500 hover:text-brand-600 font-medium">API 密钥</Link> 页面，点击「创建 API 密钥」，在弹窗里选择分组（默认「全站调用」即可用全部模型），填个名称后创建。
+          <b className="text-page">第一步，登录后先进入「控制台」</b>——顶部导航点 <Link to="/dashboard" className="text-brand-500 hover:text-brand-600 font-medium">控制台</Link>。API 密钥的管理入口在控制台里，需要先进控制台才能找到。
         </p>
-        <p>创建成功后弹窗会显示完整的 <code className="px-1.5 py-0.5 rounded bg-page-surface text-page-label font-mono text-xs">sk-</code> 开头的密钥，请立即复制保存，它只完整显示一次。</p>
+        <p>
+          <b className="text-page">第二步，进入「API 密钥」页面</b>——在 <Link to="/tokens" className="text-brand-500 hover:text-brand-600 font-medium">API 密钥</Link> 页，点击右上角的「创建 API 密钥」按钮。
+        </p>
+        <p>
+          <b className="text-page">第三步，选择分组并创建</b>——在弹出的窗口里，从「模型分组」下拉框选择:默认「全站调用」可用全部模型;也可以选 GPT、Opus、图像通道等指定分组。填写一个名称(方便你区分不同用途),额度/过期时间可留默认,点「创建」。
+        </p>
+        <p>
+          <b className="text-page">第四步，复制并保存密钥</b>——创建成功后会弹出完整的 <code className="px-1.5 py-0.5 rounded bg-page-surface text-page-label font-mono text-xs">sk-</code> 开头密钥,点「复制密钥」保存好。<b className="text-page-danger">注意:出于安全,完整密钥只显示这一次</b>,关闭后在列表里只能看到打码的密钥。
+        </p>
       </Step>
 
       <Step n={2} title="选择调用地址（Base URL）">
         <p>创建密钥后，从下面任选一条最适合你网络的线路作为 Base URL。点击地址即可复制：</p>
         <div className="w-full -ml-11 sm:ml-0">
-          <ApiEndpoints />
+          <ApiEndpoints hideSite />
         </div>
         <p className="text-xs text-page-muted">
           说明：「大陆线路」适合中国大陆网络访问；「海外直链」海外网络速度更快。三条线路都调用同一套后端，价格与模型完全一致。
@@ -83,10 +91,10 @@ export default function UsageDocs() {
       </Step>
 
       <Step n={3} title="通用调用示例">
-        <p>OpenAI 兼容格式（把 <code className="font-mono text-xs">sk-你的密钥</code> 和 Base URL 换成你的）：</p>
+        <p>OpenAI 兼容格式（下例用海外直链地址，可换成大陆线路；把 <code className="font-mono text-xs">sk-你的密钥</code> 换成你的）：</p>
         <CodeBlock
           label="curl · OpenAI 兼容"
-          code={`curl https://你的Base URL/v1/chat/completions \\
+          code={`curl https://test1122.up.railway.app/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer sk-你的密钥" \\
   -d '{
