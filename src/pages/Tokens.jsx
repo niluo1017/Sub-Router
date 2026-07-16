@@ -709,6 +709,7 @@ export default function Tokens() {
           copiedId={copiedId}
           expandedTokens={expandedTokens}
           tokenModels={tokenModels}
+          keyGroups={keyGroups}
           onCopy={handleCopy}
           onDelete={setDeleteConfirm}
           onEdit={openEditToken}
@@ -726,6 +727,7 @@ export default function Tokens() {
             copiedId={copiedId}
             expandedTokens={expandedTokens}
             tokenModels={tokenModels}
+            keyGroups={keyGroups}
             onCopy={handleCopy}
             onDelete={setDeleteConfirm}
             onEdit={openEditToken}
@@ -757,6 +759,7 @@ function TokenListSection({
   copiedId,
   expandedTokens,
   tokenModels,
+  keyGroups = [],
   onCopy,
   onDelete,
   onEdit,
@@ -768,7 +771,38 @@ function TokenListSection({
   official = false,
 }) {
   const [menu, setMenu] = useState(null);
+  const [nameFilter, setNameFilter] = useState('');
+  const [keyFilter, setKeyFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const { symbol = '$', rate = 1 } = currency || {};
+
+  const groupById = useMemo(() => {
+    const m = {};
+    (keyGroups || []).forEach((g) => { m[g.id] = g; });
+    return m;
+  }, [keyGroups]);
+
+  const resolveGroup = (token) => {
+    const gid = token.key_group_id;
+    const g = gid ? groupById[gid] : null;
+    if (g) return { label: g.name, badge: g.discount_label || '' };
+    if (token.type === 'official' || token.group === 'dist_official') {
+      return { label: t('tokens.officialKeyBadge'), badge: '' };
+    }
+    return { label: t('tokens.defaultGroup'), badge: '' };
+  };
+
+  const filteredTokens = useMemo(() => {
+    const nq = nameFilter.trim().toLowerCase();
+    const kq = keyFilter.trim().toLowerCase();
+    return (tokens || []).filter((token) => {
+      if (nq && !String(token.name || '').toLowerCase().includes(nq)) return false;
+      if (kq && !String(token.key || '').toLowerCase().includes(kq)) return false;
+      if (statusFilter === 'enabled' && token.status !== 1) return false;
+      if (statusFilter === 'disabled' && token.status === 1) return false;
+      return true;
+    });
+  }, [tokens, nameFilter, keyFilter, statusFilter]);
   const siteBase = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
   const connLines = [
     { name: t('home.apiEndpointSite'), url: siteBase },
@@ -788,6 +822,34 @@ function TokenListSection({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-heading font-semibold text-page">{title}</h2>
       </div>
+
+      {tokens.length > 0 && (
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="text"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className="input sm:max-w-[220px]"
+            placeholder={t('tokens.filterByName', '按名称筛选…')}
+          />
+          <input
+            type="text"
+            value={keyFilter}
+            onChange={(e) => setKeyFilter(e.target.value)}
+            className="input sm:max-w-[220px]"
+            placeholder={t('tokens.filterByKey', '按 API 密钥筛选…')}
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input sm:max-w-[140px]"
+          >
+            <option value="all">{t('tokens.statusAll', '全部状态')}</option>
+            <option value="enabled">{t('tokens.enabled')}</option>
+            <option value="disabled">{t('tokens.disabled')}</option>
+          </select>
+        </div>
+      )}
 
       {tokens.length === 0 ? (
         <div className="glass rounded-2xl p-8 text-center">
@@ -809,14 +871,23 @@ function TokenListSection({
                 <th className="text-left px-4 py-3 font-medium">{t('tokens.name')}</th>
                 <th className="text-left px-4 py-3 font-medium">{t('tokens.status', '状态')}</th>
                 <th className="text-left px-4 py-3 font-medium">{t('tokens.apiKeyColumn', 'API 密钥')}</th>
-                <th className="text-left px-4 py-3 font-medium">{t('tokens.quotaLimit')}</th>
-                <th className="text-left px-4 py-3 font-medium">{t('tokens.modelLimits')}</th>
-                <th className="text-left px-4 py-3 font-medium">IP</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.quotaColumn', '额度')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.groupColumn', '分组')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.modelColumn', '模型')}</th>
+                <th className="text-left px-4 py-3 font-medium">{t('tokens.ipColumn', 'IP 限制')}</th>
                 <th className="text-right px-4 py-3 font-medium">{t('tokens.actions', '操作')}</th>
               </tr>
             </thead>
             <tbody>
-              {tokens.map((token) => {
+              {filteredTokens.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-page-muted">
+                    {t('tokens.noFilterMatch', '没有匹配的密钥')}
+                  </td>
+                </tr>
+              )}
+              {filteredTokens.map((token) => {
+                const group = resolveGroup(token);
                 const keyStr = token.key ? `sk-${token.key}` : '';
                 const masked = token.key
                   ? `sk-${token.key.slice(0, 4)}••••${token.key.slice(-4)}`
@@ -864,6 +935,16 @@ function TokenListSection({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-page-secondary whitespace-nowrap">{quotaText}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-brand-500 font-medium">{group.label}</span>
+                          {group.badge && (
+                            <span className="rounded-full bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-500">
+                              {group.badge}
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-page-secondary whitespace-nowrap">
                         {modelCount > 0 ? t('tokens.modelLimitedCount', { count: modelCount }) : t('tokens.unlimitedQuota')}
                       </td>
@@ -899,7 +980,7 @@ function TokenListSection({
                     </tr>
                     {expanded && (
                       <tr className="border-b border-page-divider bg-page-surface/50">
-                        <td colSpan={7} className="px-4 py-3">
+                        <td colSpan={8} className="px-4 py-3">
                           {tokenModels[token.id]?.loading ? (
                             <div className="flex items-center gap-2 text-sm text-page-secondary">
                               <div className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
