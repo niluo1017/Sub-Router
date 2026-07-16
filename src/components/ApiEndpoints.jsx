@@ -28,7 +28,7 @@ const copyToClipboard = async (text) => {
   }
 };
 
-export default function ApiEndpoints() {
+export default function ApiEndpoints({ hideSite = false }) {
   const { t } = useTranslation();
   const { site } = useSite();
 
@@ -40,11 +40,9 @@ export default function ApiEndpoints() {
 
   const endpoints = useMemo(
     () => [
-      {
-        id: 'site',
-        label: t('home.apiEndpointSite'),
-        url: siteEndpoint,
-      },
+      ...(hideSite
+        ? []
+        : [{ id: 'site', label: t('home.apiEndpointSite'), url: siteEndpoint }]),
       ...SHARED_API_ENDPOINTS.map((endpoint) => ({
         ...endpoint,
         label: t(endpoint.labelKey),
@@ -52,7 +50,7 @@ export default function ApiEndpoints() {
         apiOnly: true,
       })),
     ].filter((endpoint) => endpoint.url),
-    [siteEndpoint, t],
+    [siteEndpoint, t, hideSite],
   );
 
   const handleCopy = async (url) => {
