@@ -430,8 +430,8 @@
     "tokens.ipWhitelistPlaceholder": "一行一个 IP 或 CIDR；留空则不限制",
     "tokens.ipLimited": "IP 限制",
 
-    "config.title": "配置文件导出",
-    "config.subtitle": "选择您的 API Key 和模型，一键生成配置文件",
+    "config.title": "连接 URL / 线路",
+    "config.subtitle": "根据自己的网络环境选择调用线路，复制 Base URL 即可接入",
     "config.selectKey": "选择 API Key",
     "config.selectModel": "选择模型",
     "config.selectTool": "选择工具",

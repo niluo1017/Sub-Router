@@ -430,8 +430,8 @@
     "tokens.ipWhitelistPlaceholder": "One IP or CIDR per line; blank means unrestricted",
     "tokens.ipLimited": "IP limited",
 
-    "config.title": "Config File Export",
-    "config.subtitle": "Select your API Key and model to generate config files",
+    "config.title": "Connection URL / Line",
+    "config.subtitle": "Pick the line that fits your network, then copy the Base URL to connect",
     "config.selectKey": "Select API Key",
     "config.selectModel": "Select Model",
     "config.selectTool": "Select Tool",
