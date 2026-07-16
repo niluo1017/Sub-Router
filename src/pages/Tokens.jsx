@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   getTokens,
@@ -766,7 +767,7 @@ function TokenListSection({
   t,
   official = false,
 }) {
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menu, setMenu] = useState(null);
   const { symbol = '$', rate = 1 } = currency || {};
   const siteBase = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
   const connLines = [
@@ -825,7 +826,6 @@ function TokenListSection({
                 const quotaText = token.unlimited_quota
                   ? t('tokens.unlimitedQuota')
                   : `${symbol}${((Number(token.remain_quota || 0) / Q) * Number(rate || 1)).toFixed(2)}`;
-                const isOpen = openMenuId === token.id;
                 const expanded = expandedTokens[token.id];
                 return (
                   <React.Fragment key={token.id}>
@@ -871,7 +871,7 @@ function TokenListSection({
                         {ipLimited ? t('tokens.ipLimited') : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1 relative">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => onEdit(token)}
                             className="p-1.5 rounded-md text-page-muted hover:bg-page-surface-hover hover:text-brand-500 transition-colors"
@@ -882,7 +882,11 @@ function TokenListSection({
                             </svg>
                           </button>
                           <button
-                            onClick={() => setOpenMenuId(isOpen ? null : token.id)}
+                            onClick={(e) => {
+                              if (menu?.token?.id === token.id) { setMenu(null); return; }
+                              const r = e.currentTarget.getBoundingClientRect();
+                              setMenu({ token, top: r.bottom + 4, right: window.innerWidth - r.right });
+                            }}
                             className="p-1.5 rounded-md text-page-muted hover:bg-page-surface-hover hover:text-page transition-colors"
                             title={t('tokens.more', '更多')}
                           >
@@ -890,28 +894,6 @@ function TokenListSection({
                               <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
                             </svg>
                           </button>
-                          {isOpen && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                              <div className="absolute right-0 top-9 z-50 w-48 rounded-xl border border-page-divider bg-page-inset shadow-lg py-1 text-left">
-                                <MenuItem onClick={() => { onCopy(keyStr); setOpenMenuId(null); }}>
-                                  {t('tokens.copyKey', '复制密钥')}
-                                </MenuItem>
-                                <MenuItem onClick={() => { onCopy(buildConnectionInfo(token)); setOpenMenuId(null); }}>
-                                  {t('tokens.copyConnInfo', '复制连接信息')}
-                                </MenuItem>
-                                <MenuItem onClick={() => { onCopy(buildCCSwitch(token)); setOpenMenuId(null); }}>
-                                  CC Switch
-                                </MenuItem>
-                                <MenuItem onClick={() => { onToggleSupportedModels(token.id); setOpenMenuId(null); }}>
-                                  {expanded ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
-                                </MenuItem>
-                                <MenuItem danger onClick={() => { onDelete(token); setOpenMenuId(null); }}>
-                                  {t('tokens.delete')}
-                                </MenuItem>
-                              </div>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -952,6 +934,32 @@ function TokenListSection({
             </tbody>
           </table>
         </div>
+      )}
+      {menu && createPortal(
+        <div className="fixed inset-0 z-[70]" onClick={() => setMenu(null)}>
+          <div
+            className="fixed w-48 rounded-xl border border-page-divider bg-page-inset shadow-xl py-1 text-left"
+            style={{ top: menu.top, right: menu.right }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem onClick={() => { onCopy(`sk-${menu.token.key}`); setMenu(null); }}>
+              {t('tokens.copyKey', '复制密钥')}
+            </MenuItem>
+            <MenuItem onClick={() => { onCopy(buildConnectionInfo(menu.token)); setMenu(null); }}>
+              {t('tokens.copyConnInfo', '复制连接信息')}
+            </MenuItem>
+            <MenuItem onClick={() => { onCopy(buildCCSwitch(menu.token)); setMenu(null); }}>
+              CC Switch
+            </MenuItem>
+            <MenuItem onClick={() => { onToggleSupportedModels(menu.token.id); setMenu(null); }}>
+              {expandedTokens[menu.token.id] ? t('tokens.hideSupportedModels') : t('tokens.viewSupportedModels')}
+            </MenuItem>
+            <MenuItem danger onClick={() => { onDelete(menu.token); setMenu(null); }}>
+              {t('tokens.delete')}
+            </MenuItem>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
