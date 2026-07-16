@@ -93,6 +93,8 @@
     "home.apiEndpointOverseasCdnNote": "Non-overseas route, works on mainland networks",
     "home.apiEndpointApiOnly": "API only",
     "home.apiEndpointRecommended": "Recommended",
+    "pricing.copyModelName": "Copy model name",
+    "pricing.modelNameCopied": "Model name copied",
 
     "login.welcomeBack": "Welcome Back",
     "login.signInTo": "Sign in to {{name}}",
