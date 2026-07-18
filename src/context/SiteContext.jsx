@@ -75,6 +75,22 @@ function applySiteDocumentMeta(site) {
   upsertLink('manifest', '/site.webmanifest');
 }
 
+const SITE_CACHE_KEY = 'dist-site-info-cache';
+// 后端 site/info 接口可能很慢（主站侧）。为避免整页干等，
+// 设一个兜底超时：到点即用缓存/默认值先渲染，真实数据回来再更新。
+const SITE_FALLBACK_TIMEOUT_MS = 2500;
+
+function readCachedSite() {
+  try {
+    const raw = localStorage.getItem(SITE_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' && data.name ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function SiteProvider({ children }) {
   const [site, setSite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,17 +122,46 @@ export function SiteProvider({ children }) {
       return;
     }
 
+    let settled = false;
+    const settle = () => {
+      if (!settled) {
+        settled = true;
+        setLoading(false);
+      }
+    };
+
+    // 1) 有缓存则立即渲染（重复访问秒开），后台再刷新
+    const cached = readCachedSite();
+    if (cached) {
+      setSite(cached);
+      applyThemeClass(cached.theme_template);
+      applySiteDocumentMeta(cached);
+      settle();
+    }
+
+    // 2) 无缓存时的兜底：到点即先渲染，别被慢接口卡成整页转圈
+    const timeoutId = setTimeout(settle, SITE_FALLBACK_TIMEOUT_MS);
+
+    // 3) 后台请求真实数据，回来后更新并写缓存
     getSiteInfo()
       .then((res) => {
         if (res.data.success) {
-          setSite(res.data.data);
-          // Apply theme class to body immediately
-          applyThemeClass(res.data.data?.theme_template);
-          applySiteDocumentMeta(res.data.data);
+          const data = res.data.data;
+          setSite(data);
+          applyThemeClass(data?.theme_template);
+          applySiteDocumentMeta(data);
+          try {
+            localStorage.setItem(SITE_CACHE_KEY, JSON.stringify(data));
+          } catch (e) { /* ignore quota */ }
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timeoutId);
+        settle();
+      });
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return (
