@@ -87,6 +87,9 @@
   }
   const sellNum = m => { const s = sell(m); return s.none ? Infinity : s.num; };
   const shelfOf = m => { const g = gmap.get(m.model_name + '|' + m.provider_slug); return !g ? 'none' : (g.enabled ? 'on' : 'off'); };
+  // 利润率 =（分站售价 − 商家成本）/ 商家成本，按输入价/次价的人民币口径算
+  const marginPct = m => { const c = costNum(m), s = sellNum(m); if (!isFinite(s) || !(c > 0)) return null; return (s / c - 1) * 100; };
+  const cMargin = m => { const r = marginPct(m); if (r == null) return '<span class="muted">-</span>'; const col = r > 35 ? '#3fb950' : r > 0 ? '#d29922' : '#f85149'; return '<span style="color:' + col + '" title="(分站售价-商家成本)/商家成本">' + (r >= 0 ? '+' : '') + r.toFixed(0) + '%</span>'; };
 
   // 颜色化
   const cT = v => v == null || v <= 0 ? '<span style="color:#6e7681" title="样本少/统计异常">异常</span>' : '<span style="color:' + (v > 6000 ? '#f85149' : v > 3000 ? '#d29922' : '#3fb950') + '">' + (v / 1000).toFixed(1) + 's</span>';
@@ -162,7 +165,7 @@
         const d = m.description ? '<div class="muted" style="font-size:11px;margin-top:1px">' + esc(clamp(m.description, 60)) + '</div>' : '';
         return '<div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between">'
           + '<div style="min-width:0"><span style="font-weight:600">' + esc(m.model_name) + '</span> <span class="muted" style="font-size:10px">' + esc(m.category) + '</span>' + d + '</div>'
-          + '<div style="text-align:right;white-space:nowrap;flex-shrink:0"><span style="color:#adbac7">' + priceTxt(m) + '</span>　首字 ' + cT(ttftOf(m)) + '　可用 ' + cA(m.availability) + '　缓存 ' + cC(m.cache_hit_rate) + (sp.none ? '' : '　售 <span style="color:' + (sp.custom ? '#e3b341' : '#8b949e') + '">' + sp.txt + '</span>') + '</div>'
+          + '<div style="text-align:right;white-space:nowrap;flex-shrink:0"><span style="color:#adbac7">' + priceTxt(m) + '</span>　首字 ' + cT(ttftOf(m)) + '　可用 ' + cA(m.availability) + '　缓存 ' + cC(m.cache_hit_rate) + (sp.none ? '' : '　售 <span style="color:' + (sp.custom ? '#e3b341' : '#8b949e') + '">' + sp.txt + '</span>') + (marginPct(m) != null ? '　利 ' + cMargin(m) : '') + '</div>'
           + '</div>';
       }).join('') + '</div>';
     }
@@ -211,7 +214,7 @@
       if (S.maxTtft !== '' && (t == null || t / 1000 > +S.maxTtft)) return false;
       return true;
     });
-    const sv = m => S.sortKey === 'ttft' ? ttftOf(m) : S.sortKey === 'costnum' ? costNum(m) : S.sortKey === 'sellnum' ? sellNum(m) : m[S.sortKey];
+    const sv = m => S.sortKey === 'ttft' ? ttftOf(m) : S.sortKey === 'costnum' ? costNum(m) : S.sortKey === 'sellnum' ? sellNum(m) : S.sortKey === 'marginnum' ? (marginPct(m) ?? -Infinity) : m[S.sortKey];
     list.sort((a, b) => { let x = sv(a), y = sv(b); if (S.sortKey === 'model_name' || S.sortKey === 'provider_slug') return (x + '').localeCompare(y + '') * S.sortDir; return ((x ?? -1) - (y ?? -1)) * S.sortDir; });
     return list;
   }
@@ -276,7 +279,7 @@
         + '<label><input type="checkbox" id="lz"' + (S.hideZero ? ' checked' : '') + '> 隐藏0调用</label>'
         + '<label><input type="checkbox" id="lb"' + (S.hideBad ? ' checked' : '') + '> 隐藏异常首字</label>'
         + '<span class="muted" style="margin-left:auto">' + list.length + ' / ' + models.length + ' 渠道</span></div></div>'
-        + '<div class="scroll"><table><thead><tr>' + th('模型', 'model_name') + '<th>简介</th>' + th('商家', 'provider_slug') + '<th>订阅</th>' + th('商家成本', 'costnum') + th('分站售价', 'sellnum') + '<th>上架</th>' + th('首字', 'ttft') + th('缓存', 'cache_hit_rate') + th('可用率', 'availability') + th('探测', 'probe_score') + th('调用量', 'total_requests') + '</tr></thead><tbody>';
+        + '<div class="scroll"><table><thead><tr>' + th('模型', 'model_name') + '<th>简介</th>' + th('商家', 'provider_slug') + '<th>订阅</th>' + th('商家成本', 'costnum') + th('利润率', 'marginnum') + th('分站售价', 'sellnum') + '<th>上架</th>' + th('首字', 'ttft') + th('缓存', 'cache_hit_rate') + th('可用率', 'availability') + th('探测', 'probe_score') + th('调用量', 'total_requests') + '</tr></thead><tbody>';
       let prev = null, band = 0;
       for (const m of list) {
         if (m.model_name !== prev) { band ^= 1; prev = m.model_name; }
@@ -285,7 +288,7 @@
         const di = m.description ? '<span title="' + esc(m.description) + '" style="cursor:help;color:#8b949e">' + esc(clamp(m.description, 22)) + '</span>' : '<span class="muted">-</span>';
         const spCell = sp.none ? '<span class="muted">—</span>' : '<span style="color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + '</span>';
         const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-m="' + esc(m.model_name) + '" data-pn="' + esc(m.provider_name || m.provider_slug) + '" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
-        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + priceTxt(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cA(m.availability) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
+        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + priceTxt(m) + '</td><td>' + cMargin(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cA(m.availability) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
       }
       h += '</tbody></table></div>';
     }
@@ -316,7 +319,7 @@
       q('#lz').onchange = e => { S.hideZero = e.target.checked; render(); };
       q('#lb').onchange = e => { S.hideBad = e.target.checked; render(); };
       qa('[data-cat]').forEach(e => e.onclick = () => { S.cat = e.dataset.cat; render(); });
-      qa('th[data-k]').forEach(t => t.onclick = () => { const k = t.dataset.k; if (S.sortKey === k) S.sortDir *= -1; else { S.sortKey = k; S.sortDir = (k === 'model_name' || k === 'provider_slug' || k === 'costnum' || k === 'sellnum') ? 1 : -1; } render(); });
+      qa('th[data-k]').forEach(t => t.onclick = () => { const k = t.dataset.k; if (S.sortKey === k) S.sortDir *= -1; else { S.sortKey = k; S.sortDir = (k === 'model_name' || k === 'provider_slug' || k === 'costnum' || k === 'sellnum' || k === 'marginnum') ? 1 : -1; } render(); });
       qa('.llsh').forEach(s => s.onclick = () => locate(s.dataset.m, s.dataset.pn));
     }
   }
