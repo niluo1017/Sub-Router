@@ -20,12 +20,24 @@
   const CORE = /^(gpt-5|claude-opus|claude-sonnet|claude-fable|gpt-image-2$|gemini|grok)/;
   const uid = String((JSON.parse(localStorage.getItem('user') || '{}').id) || '');
   const H = { 'New-Api-User': uid };
+  let globalOk = true;   // 你的订阅/价格数据这次是否成功加载（失败时顶部会报警，而不是假装 0）
 
-  // ---------- 数据加载（并发分页：页面主线程 fetch 较慢，逐页串行会等十几秒，改成每轮并发 6 页） ----------
+  // ---------- 数据加载（带重试，避免偶发失败被静默吞空导致"已订阅0/数据时全时缺"）----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function fetchJSON(url, opts = {}) {
+    for (let a = 0; a < 4; a++) {
+      try {
+        const r = await fetch(url, { credentials: 'include', ...opts });
+        if (r.status === 429 || r.status >= 500) { await sleep(350 * (a + 1)); continue; }
+        return { status: r.status, json: await r.json().catch(() => null) };
+      } catch (e) { await sleep(350 * (a + 1)); }
+    }
+    return { status: 0, json: null };
+  }
+  // 每轮并发 4 页（比 6 温和些，降低被限流概率），每页请求各自重试
   async function pageAll(base) {
-    const SIZE = 100, CONC = 6;
-    const one = p => fetch(base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=' + SIZE)
-      .then(r => r.json()).then(r => { const d = r.data || r; return Array.isArray(d) ? d : []; }).catch(() => []);
+    const SIZE = 100, CONC = 4;
+    const one = async p => { const { json } = await fetchJSON(base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=' + SIZE); const d = json && (json.data || json); return Array.isArray(d) ? d : []; };
     let all = [], page = 1, stop = false;
     while (!stop && page <= 60) {
       const batch = await Promise.all(Array.from({ length: CONC }, (_, i) => one(page + i)));
@@ -35,22 +47,20 @@
     return all;
   }
   async function loadGlobal() {
-    try {
-      const r = await fetch('/api/distributor/models/global', { headers: H }).then(r => r.json());
-      const arr = r.data || r || []; const map = new Map();
-      arr.forEach(g => map.set(g.model_name + '|' + g.provider_slug, g));
-      return map;
-    } catch (e) { return new Map(); }
+    const { status, json } = await fetchJSON('/api/distributor/models/global', { headers: H });
+    if (status === 200 && json) { const arr = json.data || json || []; const map = new Map(); (Array.isArray(arr) ? arr : []).forEach(g => map.set(g.model_name + '|' + g.provider_slug, g)); globalOk = true; return map; }
+    globalOk = false; return null;   // 失败返回 null：调用方保留旧数据、顶部报警
   }
   async function loadMarkup() {
-    try { const r = await fetch('/api/distributor/self', { headers: H }).then(r => r.json()); return (r.data || r).global_markup || 35; }
-    catch (e) { return 35; }
+    const { status, json } = await fetchJSON('/api/distributor/self', { headers: H });
+    if (status === 200 && json) return (json.data || json).global_markup || 35;
+    return null;
   }
 
   let providers = await pageAll('/api/marketplace/providers?keyword=&sort=');
   let models = await pageAll('/api/marketplace/models');
-  let gmap = await loadGlobal();
-  let markup = await loadMarkup();
+  let gmap = (await loadGlobal()) || new Map();
+  let markup = (await loadMarkup()) || 35;
 
   // 建索引 + 过滤无效商家（无任何在售模型 = 服务状态列表为空）
   function reindex() {
@@ -241,7 +251,7 @@
     el.textContent = msg; document.body.appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 2400);
   }
-  async function refreshGlobal() { gmap = await loadGlobal(); subs = subSet(); render(); }
+  async function refreshGlobal() { const g = await loadGlobal(); if (g) { gmap = g; subs = subSet(); } else toast('订阅/价格数据刷新失败，请重试', false); render(); }
   async function doStatus(m, enabled) {
     try {
       const r = await fetch('/api/distributor/models/global/status', { method: 'PUT', headers: wH(), body: JSON.stringify({ provider_id: m.provider_id, model_name: m.model_name, enabled }) }).then(r => r.json());
@@ -321,7 +331,8 @@
     return '<div style="padding:12px 14px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:10px;flex-shrink:0">'
       + '<b style="font-size:14px">📊 灵珑运营面板 <span class="muted" style="font-weight:400;font-size:11px">v5</span></b>'
       + tab('prov', '商家') + tab('model', '模型')
-      + '<span class="muted" style="font-size:11px;margin-left:auto">有效商家 ' + validProv.length + '　模型 ' + models.length + '　已订阅 ' + subs.size + ' 家　加价 ' + markup + '%'
+      + '<span style="font-size:11px;margin-left:auto"><span class="muted">有效商家 ' + validProv.length + '　模型 ' + models.length + '</span>'
+      + (globalOk ? '<span class="muted">　已订阅 ' + subs.size + ' 家　加价 ' + markup + '%</span>' : '<span style="color:#f85149;font-weight:600">　⚠️ 你的订阅/价格数据加载失败' + (uid ? '（可能被限流）' : '（未登录）') + '，点「刷新」重试</span>')
       + (droppedProv.length ? '　<span style="color:#d29922" title="有模型数但服务状态列表为空，已剔除：' + esc(droppedProv.map(p => p.slug).join(', ')) + '">已过滤无效 ' + droppedProv.length + '</span>' : '') + '</span>'
       + '<span id="ll-refresh" style="cursor:pointer;color:#58a6ff;font-size:12px">刷新</span>'
       + '<span id="ll-close" style="cursor:pointer;color:#8b949e;font-size:16px;padding:0 4px">✕</span></div>';
@@ -380,7 +391,7 @@
   function bind() {
     const q = s => box.querySelector(s), qa = s => box.querySelectorAll(s);
     q('#ll-close').onclick = () => box.remove();
-    q('#ll-refresh').onclick = async () => { q('#ll-refresh').textContent = '刷新中…'; providers = await pageAll('/api/marketplace/providers?keyword=&sort='); models = await pageAll('/api/marketplace/models'); gmap = await loadGlobal(); markup = await loadMarkup(); ({ byId: modsByProv, valid: validProv, dropped: droppedProv } = reindex()); subs = subSet(); render(); };
+    q('#ll-refresh').onclick = async () => { q('#ll-refresh').textContent = '刷新中…'; providers = await pageAll('/api/marketplace/providers?keyword=&sort='); models = await pageAll('/api/marketplace/models'); gmap = (await loadGlobal()) || gmap; markup = (await loadMarkup()) || markup; ({ byId: modsByProv, valid: validProv, dropped: droppedProv } = reindex()); subs = subSet(); render(); };
     qa('[data-view]').forEach(e => e.onclick = () => { S.view = e.dataset.view; render(); });
     const keepFocus = (id, key) => { const el = q(id); if (!el) return; el.oninput = e => { S[key] = e.target.value; const p = e.target.selectionStart; render(); const n = q(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} } }; };
     if (S.view === 'prov') {
