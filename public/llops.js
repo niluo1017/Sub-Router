@@ -9,22 +9,28 @@
    5) 双视图 + 更干净的 UI。只读数据，除"测首字"外不花钱、不改配置。 */
 (async function () {
   document.getElementById('llops')?.remove();
+  document.getElementById('llops-load')?.remove();
+  // 先出一个加载态，避免"点了没反应"的错觉（数据拉取需要几秒）
+  const _load = document.createElement('div'); _load.id = 'llops-load';
+  _load.style.cssText = 'position:fixed;top:0;right:0;width:380px;max-width:100vw;padding:16px 20px;background:#0d1117;border-left:1px solid #30363d;box-shadow:-8px 0 40px rgba(0,0,0,.5);color:#8b949e;z-index:2147483647;font:13px/1.6 -apple-system,"PingFang SC",sans-serif';
+  _load.innerHTML = '<b style="color:#e6edf3">📊 灵珑运营面板</b><br>数据加载中，请稍候…（拉取全部商家与模型，约几秒）';
+  document.body.appendChild(_load);
 
   const USD_RATE = 7.2;                 // 仅用于跨币种"从低到高"排序，显示仍用原币种
   const CORE = /^(gpt-5|claude-opus|claude-sonnet|claude-fable|gpt-image-2$|gemini|grok)/;
   const uid = String((JSON.parse(localStorage.getItem('user') || '{}').id) || '');
   const H = { 'New-Api-User': uid };
 
-  // ---------- 数据加载 ----------
+  // ---------- 数据加载（并发分页：页面主线程 fetch 较慢，逐页串行会等十几秒，改成每轮并发 6 页） ----------
   async function pageAll(base) {
-    let all = [];
-    for (let p = 1; p <= 40; p++) {
-      const url = base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=100';
-      let arr = [];
-      try { const r = await fetch(url).then(r => r.json()); const d = r.data || r; arr = Array.isArray(d) ? d : []; }
-      catch (e) { break; }
-      all = all.concat(arr);
-      if (arr.length < 100) break;
+    const SIZE = 100, CONC = 6;
+    const one = p => fetch(base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=' + SIZE)
+      .then(r => r.json()).then(r => { const d = r.data || r; return Array.isArray(d) ? d : []; }).catch(() => []);
+    let all = [], page = 1, stop = false;
+    while (!stop && page <= 60) {
+      const batch = await Promise.all(Array.from({ length: CONC }, (_, i) => one(page + i)));
+      for (const arr of batch) { all = all.concat(arr); if (arr.length < SIZE) stop = true; }
+      page += CONC;
     }
     return all;
   }
@@ -239,6 +245,7 @@
       + '<span id="ll-close" style="cursor:pointer;color:#8b949e;font-size:16px;padding:0 4px">✕</span></div>';
   }
   function render() {
+    document.getElementById('llops-load')?.remove();
     let h = header();
     if (S.view === 'prov') {
       const list = providerList();
