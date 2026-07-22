@@ -232,6 +232,59 @@
     alert('没在本页找到「' + modelName + ' · ' + providerName + '」。请确认当前在"模型管理"页。');
   }
 
+  // ---------- 写操作（上架/下架、改价；均二次确认，面板内弹窗）----------
+  const wH = () => ({ 'New-Api-User': uid, 'Content-Type': 'application/json' });
+  function toast(msg, ok = true) {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:2147483647;padding:10px 16px;border-radius:8px;font:13px -apple-system,sans-serif;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.4);background:' + (ok ? '#238636' : '#cf222e');
+    el.textContent = msg; document.body.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 2400);
+  }
+  async function refreshGlobal() { gmap = await loadGlobal(); subs = subSet(); render(); }
+  async function doStatus(m, enabled) {
+    try {
+      const r = await fetch('/api/distributor/models/global/status', { method: 'PUT', headers: wH(), body: JSON.stringify({ provider_id: m.provider_id, model_name: m.model_name, enabled }) }).then(r => r.json());
+      if (r.success) { toast((enabled ? '已上架 ' : '已下架 ') + m.model_name); await refreshGlobal(); } else toast(r.message || '操作失败', false);
+    } catch (e) { toast('请求失败：' + e.message, false); }
+  }
+  async function doPrice(m, payload) {
+    try {
+      const r = await fetch('/api/distributor/models/global/price', { method: 'PUT', headers: wH(), body: JSON.stringify({ provider_id: m.provider_id, model_name: m.model_name, ...payload }) }).then(r => r.json());
+      if (r.success) { toast(r.message || '已更新价格'); await refreshGlobal(); } else toast(r.message || '改价失败', false);
+    } catch (e) { toast('请求失败：' + e.message, false); }
+  }
+  function modal(innerHtml) {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center';
+    ov.innerHTML = '<div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px 20px;max-width:520px;width:92%;color:#e6edf3;font:13px/1.7 -apple-system,\\"PingFang SC\\",sans-serif">' + innerHtml + '</div>';
+    document.body.appendChild(ov); ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    return ov;
+  }
+  function askStatus(m) {
+    const to = shelfOf(m) !== 'on';
+    const ov = modal('<b>' + (to ? '上架' : '下架') + '</b> 确认？<div class="muted" style="margin:6px 0">商家 <b style="color:#e6edf3">' + esc(m.provider_slug) + '</b>　模型 <b style="color:#e6edf3">' + esc(m.model_name) + '</b></div>' + (to ? '上架后你的分站开始售卖该模型。' : '下架后你的分站停止售卖该模型（不影响商家侧，可随时再上架）。') + '<div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:' + (to ? '#238636' : '#cf222e') + ';color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">' + (to ? '确认上架' : '确认下架') + '</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doStatus(m, to); };
+  }
+  function openPriceEditor(m) {
+    const g = gmap.get(m.model_name + '|' + m.provider_slug);
+    const fixed = (m.billing_mode === 'fixed' || (!m.input_price && m.fixed_price));
+    const sym = cur(m.price_currency), f = 1 + markup / 100;
+    const costLine = '成本 ' + priceTxt(m) + '　当前售价 ' + (g ? sell(m).txt : '—') + '　利润率 ' + cMargin(m);
+    const form = fixed
+      ? '每次价(' + sym + ')：<input id="ll-fp" type="number" step="0.0001" style="width:130px" value="' + (g && g.custom_fixed_price || '') + '" placeholder="默认 ' + (m.fixed_price * f).toFixed(4) + '">'
+      : '输入价(' + sym + '/百万tok)：<input id="ll-ip" type="number" step="0.001" style="width:105px" value="' + (g && g.custom_input_price || '') + '" placeholder="默认 ' + (m.input_price * f).toFixed(3) + '">　输出价：<input id="ll-op" type="number" step="0.001" style="width:105px" value="' + (g && g.custom_output_price || '') + '" placeholder="默认 ' + (m.output_price * f).toFixed(3) + '">';
+    const ov = modal('<b>改分站售价</b> · ' + esc(m.model_name) + ' <span class="muted">@' + esc(m.provider_slug) + '</span><div class="muted" style="margin:6px 0 12px">' + costLine + '</div><div>' + form + '</div><div class="muted" style="font-size:11px;margin-top:8px">填数字后点"保存"用新价；点"恢复默认加价"回到 成本×(1+' + markup + '%)。价格按商家币种(' + sym + ')。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-clear" style="background:#9a6700;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">恢复默认加价</button><button class="ll-save" style="background:#238636;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">保存</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-clear').onclick = async () => { ov.remove(); await doPrice(m, { custom_input_price: null, custom_output_price: null, custom_fixed_price: null, clear_custom_pricing: true }); };
+    ov.querySelector('.ll-save').onclick = async () => {
+      let payload;
+      if (fixed) { const fp = parseFloat(ov.querySelector('#ll-fp').value); if (!(fp > 0)) return toast('请输入有效每次价', false); payload = { custom_fixed_price: fp, custom_input_price: null, custom_output_price: null, clear_custom_pricing: false }; }
+      else { const ip = parseFloat(ov.querySelector('#ll-ip').value), op = parseFloat(ov.querySelector('#ll-op').value); if (!(ip > 0) || !(op > 0)) return toast('请输入有效输入/输出价', false); payload = { custom_input_price: ip, custom_output_price: op, custom_fixed_price: null, clear_custom_pricing: false }; }
+      ov.remove(); await doPrice(m, payload);
+    };
+  }
+
   // ---------- 渲染 ----------
   const CATS = ['all', 'chat', 'image', 'video', 'embedding', 'audio'];
   function catChips(active, cb) {
@@ -286,8 +339,9 @@
         const isSub = subs.has(m.provider_slug);
         const sp = sell(m); const sh = shelfOf(m);
         const di = m.description ? '<span title="' + esc(m.description) + '" style="cursor:help;color:#8b949e">' + esc(clamp(m.description, 22)) + '</span>' : '<span class="muted">-</span>';
-        const spCell = sp.none ? '<span class="muted">—</span>' : '<span style="color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + '</span>';
-        const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-m="' + esc(m.model_name) + '" data-pn="' + esc(m.provider_name || m.provider_slug) + '" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
+        const key = m.provider_id + '|' + m.model_name;
+        const spCell = sp.none ? '<span class="muted">—</span>' : '<span class="llprice" data-key="' + esc(key) + '" title="点击改价" style="cursor:pointer;color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + ' <span style="color:#6e7681">✎</span></span>';
+        const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-key="' + esc(key) + '" title="点击上架/下架" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
         h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + priceTxt(m) + '</td><td>' + cMargin(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cA(m.availability) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
       }
       h += '</tbody></table></div>';
@@ -320,7 +374,9 @@
       q('#lb').onchange = e => { S.hideBad = e.target.checked; render(); };
       qa('[data-cat]').forEach(e => e.onclick = () => { S.cat = e.dataset.cat; render(); });
       qa('th[data-k]').forEach(t => t.onclick = () => { const k = t.dataset.k; if (S.sortKey === k) S.sortDir *= -1; else { S.sortKey = k; S.sortDir = (k === 'model_name' || k === 'provider_slug' || k === 'costnum' || k === 'sellnum' || k === 'marginnum') ? 1 : -1; } render(); });
-      qa('.llsh').forEach(s => s.onclick = () => locate(s.dataset.m, s.dataset.pn));
+      const mByKey = new Map(models.map(x => [x.provider_id + '|' + x.model_name, x]));
+      qa('.llsh').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) askStatus(m); });
+      qa('.llprice').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) openPriceEditor(m); });
     }
   }
   render();
