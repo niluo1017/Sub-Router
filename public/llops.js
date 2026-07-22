@@ -187,9 +187,10 @@
       + '<span class="muted">订阅 ' + p.subscription_count + '</span><span class="muted">RPM ' + p.max_rpm + '</span></div>'
       + '</div></div>'
       + (p.description ? '<div style="margin-top:9px;color:#c9d1d9;font-size:11.5px">' + esc(clamp(p.description, 150)) + '</div>' : '<div class="muted" style="margin-top:9px;font-size:11px">（该商家未填写简介）</div>')
-      + '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">'
-      + '<span class="muted" style="font-size:10.5px">' + esc(catStr) + '</span>'
-      + '<span class="ll-exp" data-pid="' + p.id + '" style="cursor:pointer;color:#58a6ff;font-size:11px">' + (exp ? '收起 ▲' : '展开 ' + ms.length + ' 个模型 ▼') + '</span>'
+      + '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+      + '<span class="muted" style="font-size:10.5px;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + esc(catStr) + '</span>'
+      + (sub ? '<button class="llunsub" data-pid="' + p.id + '" style="background:#3a2222;color:#f0a0a0;border:1px solid #5a2e2e;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px;white-space:nowrap">取消订阅</button>' : '<button class="llsub" data-pid="' + p.id + '" style="background:#238636;color:#fff;border:0;border-radius:6px;padding:3px 12px;cursor:pointer;font-size:11px;white-space:nowrap">订阅</button>')
+      + '<span class="ll-exp" data-pid="' + p.id + '" style="cursor:pointer;color:#58a6ff;font-size:11px;white-space:nowrap">' + (exp ? '收起 ▲' : ms.length + ' 模型 ▼') + '</span>'
       + '</div>' + modelsHtml + '</div>';
   }
 
@@ -285,6 +286,31 @@
     };
   }
 
+  // 订阅 / 取消订阅（涉及资金：强确认；真实操作由用户点击触发）
+  async function doSubscribe(p) {
+    try {
+      const r = await fetch('/api/marketplace/subscribe', { method: 'POST', headers: wH(), body: JSON.stringify({ provider_id: p.id }) }).then(r => r.json());
+      if (r.success) { toast('已订阅 ' + p.company_name.trim() + '，其模型已上架'); await refreshGlobal(); } else toast(r.message || '订阅失败（可能需到官方页确认）', false);
+    } catch (e) { toast('请求失败：' + e.message, false); }
+  }
+  async function doUnsubscribe(p) {
+    try {
+      const r = await fetch('/api/marketplace/subscribe/' + p.id, { method: 'DELETE', headers: wH() }).then(r => r.json());
+      if (r.success) { toast('已取消订阅 ' + p.company_name.trim()); await refreshGlobal(); } else toast(r.message || '取消失败', false);
+    } catch (e) { toast('请求失败：' + e.message, false); }
+  }
+  function askSubscribe(p) {
+    const ms = (modsByProv.get(p.id) || []).length;
+    const ov = modal('<b style="color:#3fb950">订阅</b> 商家 <b>' + esc(p.company_name.trim()) + '</b> <span class="muted">@' + esc(p.slug) + '</span>？<div class="muted" style="margin:8px 0">订阅后该商家的全部 <b style="color:#e6edf3">' + ms + '</b> 个模型会自动上架到你的分站；不需要的可以再到「模型」里单独下架。</div><div class="muted" style="font-size:11px">订阅本身不额外扣费，按实际调用计费。若平台对该商家另有押金/费用，会以官方弹窗为准，未确认不会扣款。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#238636;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">确认订阅</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doSubscribe(p); };
+  }
+  function askUnsubscribe(p) {
+    const ov = modal('<b style="color:#f85149">取消订阅</b> 商家 <b>' + esc(p.company_name.trim()) + '</b>？<div style="margin:8px 0;color:#f0a0a0">取消后该商家的全部模型会从你的分站<b>下架</b>，正在调用这些模型的客户会受影响；如涉及押金可能损失。请确认。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#cf222e;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">确认取消订阅</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doUnsubscribe(p); };
+  }
+
   // ---------- 渲染 ----------
   const CATS = ['all', 'chat', 'image', 'video', 'embedding', 'audio'];
   function catChips(active, cb) {
@@ -363,6 +389,9 @@
       q('#psort').onchange = e => { S.pSort = e.target.value; render(); };
       qa('[data-pcat]').forEach(e => e.onclick = () => { S.pCat = e.dataset.pcat; render(); });
       { const pq = q('#pqual'); if (pq) pq.onclick = () => { S.pQual = !S.pQual; render(); }; }
+      const pById = new Map(providers.map(p => [p.id, p]));
+      qa('.llsub').forEach(b => b.onclick = () => { const p = pById.get(+b.dataset.pid); if (p) askSubscribe(p); });
+      qa('.llunsub').forEach(b => b.onclick = () => { const p = pById.get(+b.dataset.pid); if (p) askUnsubscribe(p); });
       qa('.ll-exp').forEach(e => e.onclick = ev => { ev.stopPropagation(); const id = +e.dataset.pid; S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id); render(); });
     } else {
       q('#lm').onchange = e => { S.model = e.target.value; if (S.model) { S.sortKey = 'sellnum'; S.sortDir = 1; } render(); };
