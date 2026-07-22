@@ -16,7 +16,6 @@
     "common.close": "Close",
     "common.loading": "Loading",
     "common.refresh": "Refresh",
-
     "officialChannels.badge": "Official Channels",
     "officialChannels.title": "Official Channels",
     "officialChannels.subtitle": "Official platform channels listed by this site. Channel types and models are maintained by the platform, endpoints are fixed to official APIs, and calls should use an Official Channel group key created on the API Keys page.",
@@ -54,7 +53,6 @@
     "officialChannels.rangeMax": "Up to {{value}}",
     "officialChannels.emptyTitle": "No official channels yet",
     "officialChannels.emptyDesc": "Official channels will appear here after the site owner lists them.",
-
     "home.heroTagline": "AI API Platform",
     "home.heroSubtitle": "Access the world's most powerful AI models through a single API endpoint. Simple, affordable, reliable.",
     "home.getStarted": "Get Started Free",
@@ -95,7 +93,6 @@
     "home.apiEndpointRecommended": "Recommended",
     "pricing.copyModelName": "Copy model name",
     "pricing.modelNameCopied": "Model name copied",
-
     "login.welcomeBack": "Welcome Back",
     "login.signInTo": "Sign in to {{name}}",
     "login.signInToDefault": "Sign in to your account",
@@ -109,7 +106,6 @@
     "login.createOne": "Create one",
     "login.fillAllFields": "Please fill in all fields",
     "login.welcomeBackToast": "Welcome back!",
-
     "register.createAccount": "Create Account",
     "register.getStartedWith": "Get started with {{name}}",
     "register.getStartedDefault": "Get started with our platform",
@@ -129,7 +125,6 @@
     "register.passwordMismatch": "Passwords do not match",
     "register.passwordLength": "Password must be 8-20 characters",
     "register.accountCreated": "Account created! Please sign in.",
-
     "legal.agreePrefix": "I have read and agree to the",
     "legal.agreeJoin": "and",
     "legal.agreeRequired": "Please read and agree to the User Agreement and Privacy Policy first",
@@ -173,7 +168,6 @@
     "legal.privacy.sections.cookies.body": "The site may use cookies, LocalStorage, or similar technologies to keep login state, language preferences, interface settings, and security check results so core features work properly and the experience can be improved.",
     "legal.privacy.sections.changes.title": "Policy Updates",
     "legal.privacy.sections.changes.body": "This policy may be updated as service features, compliance needs, or security practices change. Updated content will be shown on this page. Continued use of the service means you understand the updated policy.",
-
     "dashboard.welcome": "Welcome,",
     "dashboard.manageDesc": "Manage your API usage, keys, and account",
     "dashboard.balance": "Balance",
@@ -199,7 +193,6 @@
     "dashboard.modelPrices": "Model prices",
     "dashboard.apiDocs": "API Docs",
     "dashboard.comingSoon": "Coming soon",
-
     "appMarket.badge": "App Market",
     "appMarket.title": "Built-in AI Apps",
     "appMarket.subtitle": "This page lists AI tools that can sign in with this platform's username and password. Apps automatically read your subscribed providers and call subscribed provider APIs through your account balance.",
@@ -260,7 +253,6 @@
     "appMarket.moreComingDesc": "When new AI apps go live, their entrance, source code, images, and usage notes will be shown here.",
     "appMarket.emptyTitle": "No apps listed on this site",
     "appMarket.emptyDesc": "The site owner has not selected apps to display in the App Market yet.",
-
     "subDist.nav": "Relay Site Setup",
     "subDist.dashboardEntry": "Launch a relay site you can price and promote",
     "subDist.badge": "Relay Site Setup",
@@ -318,7 +310,6 @@
     "subDist.openedSuccess": "Relay site activated successfully",
     "subDist.alreadyOpenTitle": "Your relay site is already built",
     "subDist.alreadyOpenDesc": "Relay site {{name}} has been activated. Use the same account in the main console to continue setup.",
-
     "tokens.title": "API Keys",
     "tokens.subtitle": "Manage your API access tokens",
     "tokens.newKey": "+ New Key",
@@ -432,7 +423,6 @@
     "tokens.ipWhitelist": "IP whitelist",
     "tokens.ipWhitelistPlaceholder": "One IP or CIDR per line; blank means unrestricted",
     "tokens.ipLimited": "IP limited",
-
     "config.title": "Connection URL / Line",
     "config.subtitle": "Pick the line that fits your network, then copy the Base URL to connect",
     "config.selectKey": "Select API Key",
@@ -473,7 +463,6 @@
     "config.ccswitchNotInstalledDesc": "If CC Switch already opened, you can ignore this. Otherwise, install it first and try the quick import again.",
     "config.downloadCCSwitch": "Download CC Switch",
     "config.openCCSwitchRepo": "Open project page",
-
     "downloads.badge": "Relayed downloads",
     "downloads.title": "Quick Installers",
     "downloads.subtitle": "Common client installers are served through this site via /downloads, avoiding direct browser jumps to GitHub releases and improving reliability for restricted networks.",
@@ -481,7 +470,6 @@
     "downloads.installGuide": "Install guide",
     "downloads.providerDocs": "Provider docs",
     "downloads.releases": "Official releases",
-
     "pricing.title": "Model Pricing",
     "pricing.subtitle": "Transparent, pay-as-you-go pricing for all available models. Prices shown per 1M tokens.",
     "pricing.searchPlaceholder": "Search models...",
@@ -536,7 +524,6 @@
     "定价方式": "Pricing",
     "按次计费": "Per call",
     "按量计费": "Pay as you go",
-
     "packages.title": "Packages & Plans",
     "packages.subtitle": "Choose a package that fits your usage. All plans include access to all available models.",
     "packages.noPackages": "No packages available at the moment.",
@@ -572,7 +559,6 @@
     "packages.periodicQuota": "{{symbol}}{{amount}} {{period}} quota",
     "packages.subscriptionInfo": "This is a subscription ({{period}}), valid for {{days}} days. Each period grants {{symbol}}{{amount}} quota. Unused quota expires.",
     "packages.officialEquiv": "Equivalent to ${{amount}} at {{model}} official pricing",
-
     "common.sessionExpired": "Session expired, please log in again",
     "common.requestFailed": "Request failed",
     "account.title": "Account Settings",
@@ -592,16 +578,16 @@
     "account.passwordSame": "New password must be different from the current password",
     "account.passwordMismatch": "Passwords do not match",
     "account.passwordUpdated": "Password updated successfully",
-
     "nav.topup": "Top Up",
-
     "topup.title": "Top Up",
     "topup.subtitle": "Recharge your account balance via online payment or redemption code",
     "topup.onlineTopup": "Online Top Up",
     "topup.selectAmount": "Select Amount",
     "topup.customAmount": "Custom Amount",
-    "topup.customAmountHint": "Custom amounts are automatically aligned to payable tiers so the entered and charged amounts stay consistent.",
+    "topup.customAmountHint": "Enter an amount in the current currency. Custom amounts do not receive tier bonuses.",
     "topup.rechargeAmountLabel": "Recharge Amount",
+    "topup.bonusAmount": "+{{amount}} bonus",
+    "topup.creditedAmount": "Total credit",
     "topup.amountPlaceholder": "Enter amount (min {{min}})",
     "topup.paymentMethod": "Payment Method",
     "topup.otherPayment": "Other Methods",
@@ -647,7 +633,6 @@
     "topup.exactAmountLabel": "Match the transfer amount exactly",
     "topup.exactAmountNotice": "Transfer the full number shown above, otherwise the system cannot credit it automatically.",
     "topup.exactAmountDetail": "Underpaying, overpaying, missing decimals, or rounding the amount will prevent the order from matching and require manual handling.",
-
     "topup.inviteTitle": "Referral Program",
     "topup.inviteSubtitle": "Invite friends and earn ongoing rewards",
     "topup.affAvailable": "Available Rewards",
@@ -717,18 +702,14 @@
     "topup.kolApplySubmit": "Submit Request",
     "topup.kolApplySuccess": "Application submitted. Please wait for review.",
     "topup.kolSocialRequired": "Please enter a social link",
-
     "dashboard.topupDesc": "Recharge account balance",
-
     "nav.logs": "Logs",
-
     "dashboard.logs": "Call Logs",
     "dashboard.viewLogs": "View usage details",
     "dashboard.account": "Account Settings",
     "dashboard.accountDesc": "Change login password",
     "dashboard.invoice": "Invoice Request",
     "dashboard.invoiceDesc": "Submit invoice details",
-
     "logs.title": "Call Logs",
     "logs.callLogs": "Call Logs",
     "logs.subtitle": "View detailed records of every API call",
@@ -766,7 +747,6 @@
     "logs.prev": "Prev",
     "logs.next": "Next",
     "tasks.finishTime": "Finished",
-
     "tasks.title": "Task Records",
     "tasks.subtitle": "View submitted video and image generation tasks, progress, and results",
     "tasks.videoTasks": "Video Tasks",
@@ -840,7 +820,6 @@
     "后台订阅": "Admin Subscription",
     "计费方式": "Billing Method",
     "订阅抵扣": "Subscription Deduction",
-    "定价方式": "Pricing",
     "价格": "Price",
     "输入价格": "Input Price",
     "输出价格": "Output Price",
