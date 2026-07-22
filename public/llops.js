@@ -34,15 +34,26 @@
     }
     return { status: 0, json: null };
   }
-  // 每轮并发 4 页（比 6 温和些，降低被限流概率），每页请求各自重试
+  // 每轮并发 4 页；有 total 就按 total 翻到底（避免中间页偶发短返回导致提前截断丢数据），无 total 才用短页停止
   async function pageAll(base) {
     const SIZE = 100, CONC = 4;
-    const one = async p => { const { json } = await fetchJSON(base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=' + SIZE); const d = json && (json.data || json); return Array.isArray(d) ? d : []; };
-    let all = [], page = 1, stop = false;
-    while (!stop && page <= 60) {
-      const batch = await Promise.all(Array.from({ length: CONC }, (_, i) => one(page + i)));
-      for (const arr of batch) { all = all.concat(arr); if (arr.length < SIZE) stop = true; }
-      page += CONC;
+    const fetchPage = async p => { const { json } = await fetchJSON(base + (base.includes('?') ? '&' : '?') + 'page=' + p + '&page_size=' + SIZE); const d = json && (json.data || json); return { arr: Array.isArray(d) ? d : null, total: json && Number(json.total) }; };
+    const first = await fetchPage(1);
+    let all = first.arr ? first.arr.slice() : [];
+    const total = Number(first.total) || 0;
+    if (total > 0) {
+      const pages = Math.ceil(total / SIZE);
+      for (let p = 2; p <= pages; p += CONC) {
+        const batch = await Promise.all(Array.from({ length: Math.min(CONC, pages - p + 1) }, (_, i) => fetchPage(p + i)));
+        batch.forEach(b => { if (Array.isArray(b.arr)) all = all.concat(b.arr); });
+      }
+    } else {
+      let page = 2, stop = !first.arr || first.arr.length < SIZE;
+      while (!stop && page <= 60) {
+        const batch = await Promise.all(Array.from({ length: CONC }, (_, i) => fetchPage(page + i)));
+        for (const b of batch) { const a = Array.isArray(b.arr) ? b.arr : []; all = all.concat(a); if (a.length < SIZE) stop = true; }
+        page += CONC;
+      }
     }
     return all;
   }
