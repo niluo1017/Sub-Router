@@ -296,25 +296,47 @@
     ov.querySelector('.ll-c').onclick = () => ov.remove();
     ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doStatus(m, to); };
   }
-  function openPriceEditor(m) {
+  function openPriceEditor(m, focusMargin) {
     const g = gmap.get(m.model_name + '|' + m.provider_slug);
     const fixed = (m.billing_mode === 'fixed' || (!m.input_price && m.fixed_price));
     const sym = cur(m.price_currency), f = 1 + markup / 100;
+    // 原始商家报价（商家币种，未加价）——利润率反推的基准
+    const rawI = +m.input_price || 0, rawO = +m.output_price || 0, rawF = +m.fixed_price || 0;
+    const rawBase = fixed ? rawF : rawI; // 利润率用输入价/每次价口径，跟左边那列一致
     const costLine = '成本 ' + priceTxt(m) + '　当前售价 ' + (g ? sell(m).txt : '—') + '　利润率 ' + cMargin(m);
     const IST = 'background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;padding:6px 9px;font-size:14px;outline:none;';
+    const mgRow = '<div style="margin-bottom:10px;padding:8px 10px;background:rgba(88,166,255,.08);border:1px solid #1f6feb44;border-radius:8px">'
+      + '目标利润率：<input id="ll-mg" type="number" step="1" style="width:90px;' + IST + '" placeholder="如 ' + markup + '"> %'
+      + '　<span class="muted" style="font-size:11px">快捷</span> '
+      + [markup, 35, 40, 50].filter((v, i, a) => a.indexOf(v) === i).map(v => '<button class="ll-mp" data-v="' + v + '" style="background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:5px;padding:2px 8px;margin:0 2px;cursor:pointer;font-size:12px">' + v + '%</button>').join('')
+      + '<div id="ll-mgp" class="muted" style="font-size:11px;margin-top:6px"></div></div>';
     const form = fixed
-      ? '每次价(' + sym + ')：<input id="ll-fp" type="number" step="0.0001" style="width:140px;' + IST + '" value="' + (g && g.custom_fixed_price || '') + '" placeholder="默认 ' + (m.fixed_price * f).toFixed(4) + '">'
-      : '输入价(' + sym + '/百万tok)：<input id="ll-ip" type="number" step="0.001" style="width:110px;' + IST + '" value="' + (g && g.custom_input_price || '') + '" placeholder="默认 ' + (m.input_price * f).toFixed(3) + '">　输出价：<input id="ll-op" type="number" step="0.001" style="width:110px;' + IST + '" value="' + (g && g.custom_output_price || '') + '" placeholder="默认 ' + (m.output_price * f).toFixed(3) + '">';
-    const ov = modal('<b>改分站售价</b> · ' + esc(m.model_name) + ' <span class="muted">@' + esc(m.provider_slug) + '</span><div class="muted" style="margin:6px 0 12px">' + costLine + '</div><div>' + form + '</div><div class="muted" style="font-size:11px;margin-top:8px">填数字后点"保存"用新价；点"恢复默认加价"回到 成本×(1+' + markup + '%)。价格按商家币种(' + sym + ')。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-clear" style="background:#9a6700;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">恢复默认加价</button><button class="ll-save" style="background:#238636;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">保存</button></div>');
-    ov.querySelector('.ll-c').onclick = () => ov.remove();
-    ov.querySelector('.ll-clear').onclick = async () => { ov.remove(); await doPrice(m, { custom_input_price: null, custom_output_price: null, custom_fixed_price: null, clear_custom_pricing: true }); };
-    ov.querySelector('.ll-save').onclick = async () => {
+      ? '每次价(' + sym + ')：<input id="ll-fp" type="number" step="0.0001" style="width:140px;' + IST + '" value="' + (g && g.custom_fixed_price || '') + '" placeholder="默认 ' + (rawF * f).toFixed(4) + '">'
+      : '输入价(' + sym + '/百万tok)：<input id="ll-ip" type="number" step="0.001" style="width:110px;' + IST + '" value="' + (g && g.custom_input_price || '') + '" placeholder="默认 ' + (rawI * f).toFixed(3) + '">　输出价：<input id="ll-op" type="number" step="0.001" style="width:110px;' + IST + '" value="' + (g && g.custom_output_price || '') + '" placeholder="默认 ' + (rawO * f).toFixed(3) + '">';
+    const ov = modal('<b>改分站售价</b> · ' + esc(m.model_name) + ' <span class="muted">@' + esc(m.provider_slug) + '</span><div class="muted" style="margin:6px 0 12px">' + costLine + '</div>' + mgRow + '<div>' + form + '</div><div class="muted" style="font-size:11px;margin-top:8px">填利润率会自动算出价格；也可直接填价。点"保存"用新价；"恢复默认加价"回到 成本×(1+' + markup + '%)。价格按商家币种(' + sym + ')。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-clear" style="background:#9a6700;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">恢复默认加价</button><button class="ll-save" style="background:#238636;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">保存</button></div>');
+    const q = s => ov.querySelector(s);
+    const mgEl = q('#ll-mg'), mgpEl = q('#ll-mgp');
+    const fpEl = q('#ll-fp'), ipEl = q('#ll-ip'), opEl = q('#ll-op');
+    // 由当前价格字段算实际利润率（用输入价/每次价，与左边那列口径一致）
+    const curMargin = () => { const p = parseFloat(fixed ? (fpEl && fpEl.value) : (ipEl && ipEl.value)); if (!(p > 0) || !(rawBase > 0)) return null; return (p / rawBase - 1) * 100; };
+    const showMg = () => { const r = curMargin(); if (r == null) { mgpEl.textContent = rawBase > 0 ? '' : '该商家此模型无有效报价，无法用利润率反推'; return; } const col = r > 35 ? '#3fb950' : r > 0 ? '#d29922' : '#f85149'; mgpEl.innerHTML = '→ 当前填入价对应利润率 <b style="color:' + col + '">' + (r >= 0 ? '+' : '') + r.toFixed(0) + '%</b>'; };
+    const fromMargin = () => { const r = parseFloat(mgEl.value); if (!isFinite(r) || !(rawBase > 0)) return; const fac = 1 + r / 100; if (fac <= 0) { toast('利润率过低（价格会≤0）', false); return; } if (fixed) { fpEl.value = (rawF * fac).toFixed(4); } else { ipEl.value = (rawI * fac).toFixed(3); opEl.value = (rawO * fac).toFixed(3); } showMg(); };
+    mgEl.oninput = fromMargin;
+    qa2(ov, '.ll-mp').forEach(b => b.onclick = () => { mgEl.value = b.dataset.v; fromMargin(); });
+    if (fixed) { if (fpEl) fpEl.oninput = () => { const r = curMargin(); if (r != null) mgEl.value = r.toFixed(0); showMg(); }; }
+    else { if (ipEl) ipEl.oninput = () => { const r = curMargin(); if (r != null) mgEl.value = r.toFixed(0); showMg(); }; if (opEl) opEl.oninput = showMg; }
+    showMg();
+    if (focusMargin && rawBase > 0) { try { mgEl.focus(); } catch (x) {} }
+    q('.ll-c').onclick = () => ov.remove();
+    q('.ll-clear').onclick = async () => { ov.remove(); await doPrice(m, { custom_input_price: null, custom_output_price: null, custom_fixed_price: null, clear_custom_pricing: true }); };
+    q('.ll-save').onclick = async () => {
       let payload;
-      if (fixed) { const fp = parseFloat(ov.querySelector('#ll-fp').value); if (!(fp > 0)) return toast('请输入有效每次价', false); payload = { custom_fixed_price: fp, custom_input_price: null, custom_output_price: null, clear_custom_pricing: false }; }
-      else { const ip = parseFloat(ov.querySelector('#ll-ip').value), op = parseFloat(ov.querySelector('#ll-op').value); if (!(ip > 0) || !(op > 0)) return toast('请输入有效输入/输出价', false); payload = { custom_input_price: ip, custom_output_price: op, custom_fixed_price: null, clear_custom_pricing: false }; }
+      if (fixed) { const fp = parseFloat(fpEl.value); if (!(fp > 0)) return toast('请输入有效每次价', false); payload = { custom_fixed_price: fp, custom_input_price: null, custom_output_price: null, clear_custom_pricing: false }; }
+      else { const ip = parseFloat(ipEl.value), op = parseFloat(opEl.value); if (!(ip > 0) || !(op > 0)) return toast('请输入有效输入/输出价', false); payload = { custom_input_price: ip, custom_output_price: op, custom_fixed_price: null, clear_custom_pricing: false }; }
       ov.remove(); await doPrice(m, payload);
     };
   }
+  function qa2(root, sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
 
   // 订阅 / 取消订阅（涉及资金：强确认；真实操作由用户点击触发）
   async function doSubscribe(p) {
@@ -399,7 +421,8 @@
         const key = m.provider_id + '|' + m.model_name;
         const spCell = sp.none ? '<span class="muted">—</span>' : '<span class="llprice" data-key="' + esc(key) + '" title="点击改价" style="cursor:pointer;color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + ' <span style="color:#6e7681">✎</span></span>';
         const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-key="' + esc(key) + '" title="点击上架/下架" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
-        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + costTxt(m) + '</td><td>' + cMargin(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cAm(m) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
+        const mgCell = (marginPct(m) != null && !sp.none) ? '<td class="llmargin" data-key="' + esc(key) + '" title="点击按利润率改价" style="cursor:pointer">' + cMargin(m) + '</td>' : '<td>' + cMargin(m) + '</td>';
+        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + costTxt(m) + '</td>' + mgCell + '<td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cAm(m) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
       }
       h += '</tbody></table></div>';
     }
@@ -437,6 +460,7 @@
       const mByKey = new Map(models.map(x => [x.provider_id + '|' + x.model_name, x]));
       qa('.llsh').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) askStatus(m); });
       qa('.llprice').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) openPriceEditor(m); });
+      qa('.llmargin').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) openPriceEditor(m, true); });
     }
   }
   render();
