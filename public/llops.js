@@ -406,6 +406,81 @@
     ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doUnsubscribe(p); };
   }
 
+  // ---------- 连通性测试（只测已订阅：往 /pg 发一次真实调用，看通/报错；不动任何订阅）----------
+  let lastList = [];                         // 最近一次模型视图渲染出的（已过滤/排序）列表，供批量测试用
+  const testRes = new Map();                 // key: provider_id|model_name -> {state,code,msg,ts}
+  const tkey = m => m.provider_id + '|' + m.model_name;
+  async function testModel(m) {
+    if (!subs.has(m.provider_slug)) { testRes.set(tkey(m), { state: 'skip', msg: '未订阅：实时测试需先订阅该商家；可先看左边「可用率」的实测服务状态' }); return; }
+    testRes.set(tkey(m), { state: 'run' });
+    try {
+      const r = await fetch('/pg/chat/completions', { method: 'POST', headers: wH(), body: JSON.stringify({ model: m.model_name, group: 'provider:' + m.provider_slug, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1, stream: false }) });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      if (r.ok && j && Array.isArray(j.choices)) testRes.set(tkey(m), { state: 'ok', ts: Date.now() });
+      else { const err = (j && (j.error || j)) || {}; testRes.set(tkey(m), { state: 'err', code: err.code || r.status, msg: err.message || j && j.message || ('HTTP ' + r.status), ts: Date.now() }); }
+    } catch (e) { testRes.set(tkey(m), { state: 'err', code: 'net', msg: '网络错误：' + e.message, ts: Date.now() }); }
+  }
+  // 测试结果渲染（放在"测试"列）
+  function cTest(m) {
+    if (!subs.has(m.provider_slug)) return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="未订阅：实时测试需先订阅该商家。可参考左边「可用率」实测服务状态" style="cursor:help;color:#6e7681;font-size:11px">—</span>';
+    const r = testRes.get(tkey(m));
+    if (!r) return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="点我发一次真实调用，测是否连通" style="cursor:pointer;color:#58a6ff;text-decoration:underline dotted;font-size:11px">测</span>';
+    if (r.state === 'run') return '<span style="color:#8b949e;font-size:11px">测中…</span>';
+    if (r.state === 'ok') return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="连通正常（点可重测）" style="cursor:pointer;color:#3fb950">✓通</span>';
+    if (r.state === 'skip') return '<span style="color:#6e7681;font-size:11px" title="' + esc(r.msg) + '">—</span>';
+    return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="' + esc((r.code ? '[' + r.code + '] ' : '') + (r.msg || '') + '（点可重测）') + '" style="cursor:pointer;color:#f85149;font-size:11px">✗' + esc(String(r.code || '错')) + '</span>';
+  }
+  function progressToast() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:2147483647;padding:10px 16px;border-radius:8px;font:13px -apple-system,sans-serif;color:#fff;background:#1f6feb;box-shadow:0 4px 20px rgba(0,0,0,.4)';
+    document.body.appendChild(el);
+    return { set: t => el.textContent = t, done: () => el.remove() };
+  }
+  async function batchTest(list) {
+    const targets = list.filter(m => subs.has(m.provider_slug));
+    const skipped = list.length - targets.length;
+    if (!targets.length) return toast('当前列表没有「已订阅」的模型可测（未订阅的不能实时测）', false);
+    const ov = modal('<b>批量测试连通性</b><div class="muted" style="margin:8px 0">将对当前列表里 <b style="color:#e6edf3">' + targets.length + '</b> 个<b>已订阅</b>模型各发一次真实调用，看是否连通/报错。' + (skipped ? '另有 <b>' + skipped + '</b> 个未订阅，会自动跳过。' : '') + '</div><div class="muted" style="font-size:11px">每次调用约消耗几个 token（几乎不花钱），不改动任何订阅或上架状态。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#1f6feb;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">开始测试 ' + targets.length + ' 个</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => {
+      ov.remove();
+      const pt = progressToast(); let done = 0, ok = 0, err = 0; const CONC = 4;
+      for (let i = 0; i < targets.length; i += CONC) {
+        await Promise.all(targets.slice(i, i + CONC).map(async m => { await testModel(m); done++; const r = testRes.get(tkey(m)); if (r && r.state === 'ok') ok++; else err++; pt.set('测试中… ' + done + '/' + targets.length + '（通 ' + ok + '，异常 ' + err + '）'); }));
+      }
+      pt.done(); render(); toast('测试完成：通 ' + ok + '，异常 ' + err + (skipped ? '，跳过未订阅 ' + skipped : ''), err === 0);
+    };
+  }
+
+  // ---------- 只上架此模型（未订阅时：订阅该商家 + 只上架选中 + 其余全部下架）----------
+  async function doShelfOnly(m) {
+    // 安全兜底：若该商家其实已订阅，只上架这一个、绝不重复订阅、绝不动其他（符合"只加不动其他"）
+    if (subs.has(m.provider_slug)) { await doStatus(m, true); return; }
+    const pt = progressToast(); pt.set('正在订阅 ' + m.provider_slug + '…');
+    try {
+      const rs = await fetch('/api/marketplace/subscribe', { method: 'POST', headers: wH(), body: JSON.stringify({ provider_id: m.provider_id }) }).then(r => r.json());
+      if (!rs.success) { pt.done(); return toast(rs.message || '订阅失败（可能需到官方页确认）', false); }
+      const g = await loadGlobal(); if (g) { gmap = g; subs = subSet(); }   // 拿到订阅后的上架状态
+      const sibs = (modsByProv.get(m.provider_id) || []);
+      let i = 0;
+      for (const x of sibs) {                                                // 只留选中，其余下架
+        const want = (x.model_name === m.model_name);
+        if (shelfOf(x) !== (want ? 'on' : 'off')) {
+          await fetch('/api/distributor/models/global/status', { method: 'PUT', headers: wH(), body: JSON.stringify({ provider_id: x.provider_id, model_name: x.model_name, enabled: want }) });
+        }
+        pt.set('调整上架 ' + (++i) + '/' + sibs.length + '…');
+      }
+      pt.done(); await refreshGlobal();
+      toast('已订阅并只上架 ' + m.model_name + '，其余 ' + (sibs.length - 1) + ' 个已下架');
+    } catch (e) { pt.done(); toast('请求失败：' + e.message, false); }
+  }
+  function askShelfOnly(m) {
+    const sibs = (modsByProv.get(m.provider_id) || []); const others = Math.max(0, sibs.length - 1);
+    const ov = modal('<b style="color:#3fb950">订阅并「只上架此模型」</b><div class="muted" style="margin:8px 0">商家 <b style="color:#e6edf3">' + esc(m.provider_slug) + '</b>　模型 <b style="color:#e6edf3">' + esc(m.model_name) + '</b></div>将先<b>订阅该商家</b>，随后<b>只上架</b> ' + esc(m.model_name) + '，该商家其余 <b style="color:#e6edf3">' + others + '</b> 个模型全部保持<b>下架</b>。<div class="muted" style="font-size:11px;margin-top:6px">订阅本身一般不额外扣费、按实际调用计费；若平台对该商家另有押金/费用会以官方弹窗为准，未确认不会扣款。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#238636;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">订阅并只上架此</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doShelfOnly(m); };
+  }
+
   // ---------- 渲染 ----------
   const CATS = ['all', 'chat', 'image', 'video', 'embedding', 'audio'];
   function catChips(active, cb) {
@@ -438,7 +513,7 @@
         + '<div class="scroll"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(372px,1fr));gap:11px;align-items:start">'
         + (list.length ? list.map(providerCard).join('') : '<div class="muted">无匹配商家</div>') + '</div></div>';
     } else {
-      const list = modelList();
+      const list = modelList(); lastList = list;
       const models_opt = [...new Set(models.map(m => m.model_name))].sort();
       const th = (l, k) => '<th data-k="' + k + '">' + l + (S.sortKey === k ? (S.sortDir > 0 ? ' ▲' : ' ▼') : '') + '</th>';
       h += '<div style="padding:10px 14px;border-bottom:1px solid #161b22;display:flex;flex-direction:column;gap:8px;flex-shrink:0">'
@@ -453,8 +528,9 @@
         + '<span style="margin-left:8px">可用率≥<input id="la" type="number" value="' + S.minAvail + '" style="width:48px">%　缓存≥<input id="lc" type="number" value="' + S.minCache + '" style="width:48px">%　首字≤<input id="lt" type="number" value="' + S.maxTtft + '" style="width:48px">s</span>'
         + '<label><input type="checkbox" id="lz"' + (S.hideZero ? ' checked' : '') + '> 隐藏0调用</label>'
         + '<label><input type="checkbox" id="lb"' + (S.hideBad ? ' checked' : '') + '> 隐藏异常首字</label>'
-        + '<span class="muted" style="margin-left:auto">' + list.length + ' / ' + models.length + ' 渠道</span></div></div>'
-        + '<div class="scroll"><table><thead><tr>' + th('模型', 'model_name') + '<th>简介</th>' + th('商家', 'provider_slug') + '<th>订阅</th>' + th('商家成本', 'costnum') + th('利润率', 'marginnum') + th('分站售价', 'sellnum') + '<th>上架</th>' + th('首字', 'ttft') + th('缓存', 'cache_hit_rate') + th('可用率', 'availability') + th('探测', 'probe_score') + th('调用量', 'total_requests') + '</tr></thead><tbody>';
+        + '<button id="lbatch" title="对当前列表里已订阅的模型逐个发一次真实调用，测连通/报错" style="margin-left:auto;background:#1f6feb;color:#fff;border:0;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px">🔬 批量测当前</button>'
+        + '<span class="muted" style="margin-left:8px">' + list.length + ' / ' + models.length + ' 渠道</span></div></div>'
+        + '<div class="scroll"><table><thead><tr>' + th('模型', 'model_name') + '<th>简介</th>' + th('商家', 'provider_slug') + '<th>订阅</th>' + th('商家成本', 'costnum') + th('利润率', 'marginnum') + th('分站售价', 'sellnum') + '<th>上架</th>' + '<th>测试</th>' + th('首字', 'ttft') + th('缓存', 'cache_hit_rate') + th('可用率', 'availability') + th('探测', 'probe_score') + th('调用量', 'total_requests') + '</tr></thead><tbody>';
       let prev = null, band = 0;
       for (const m of list) {
         if (m.model_name !== prev) { band ^= 1; prev = m.model_name; }
@@ -463,9 +539,11 @@
         const di = m.description ? '<span title="' + esc(m.description) + '" style="cursor:help;color:#8b949e">' + esc(clamp(m.description, 22)) + '</span>' : '<span class="muted">-</span>';
         const key = m.provider_id + '|' + m.model_name;
         const spCell = sp.none ? '<span class="muted">—</span>' : '<span class="llprice" data-key="' + esc(key) + '" title="点击改价" style="cursor:pointer;color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + ' <span style="color:#6e7681">✎</span></span>';
-        const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-key="' + esc(key) + '" title="点击上架/下架" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
+        const shCell = !isSub
+          ? '<span class="llonly" data-key="' + esc(key) + '" title="该商家未订阅。点此：订阅该商家并只上架这一个模型，其余保持下架" style="cursor:pointer;color:#3fb950;font-size:11px;text-decoration:underline dotted">＋只上架此</span>'
+          : (sh === 'none' ? '<span class="muted" title="该商家已订阅，但此模型暂不可上架">—</span>' : '<span class="llsh" data-key="' + esc(key) + '" title="点击上架/下架" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>');
         const mgCell = (marginPct(m) != null && !sp.none) ? '<td class="llmargin" data-key="' + esc(key) + '" title="点击按利润率改价" style="cursor:pointer">' + cMargin(m) + '</td>' : '<td>' + cMargin(m) + '</td>';
-        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + costTxt(m) + '</td>' + mgCell + '<td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cAm(m) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
+        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + costTxt(m) + '</td>' + mgCell + '<td>' + spCell + '</td><td>' + shCell + '</td><td>' + cTest(m) + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cAm(m) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
       }
       h += '</tbody></table></div>';
     }
@@ -504,6 +582,9 @@
       qa('.llsh').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) askStatus(m); });
       qa('.llprice').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) openPriceEditor(m); });
       qa('.llmargin').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) openPriceEditor(m, true); });
+      qa('.lltest').forEach(s => s.onclick = async () => { const m = mByKey.get(s.dataset.key); if (!m || !subs.has(m.provider_slug)) return; s.textContent = '测中…'; s.style.color = '#8b949e'; await testModel(m); render(); });
+      qa('.llonly').forEach(s => s.onclick = () => { const m = mByKey.get(s.dataset.key); if (m) askShelfOnly(m); });
+      const lb = q('#lbatch'); if (lb) lb.onclick = () => batchTest(lastList);
     }
   }
   render();
