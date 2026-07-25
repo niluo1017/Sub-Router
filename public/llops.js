@@ -67,11 +67,35 @@
     if (status === 200 && json) return (json.data || json).global_markup || 35;
     return null;
   }
+  // 实测"服务状态"：逐商家拉 24h 探测，按模型聚合成功率/延迟 —— 这才是真实可用率（与商家页服务状态一致）
+  // 关键：面板不写死任何商家，每次都按当前商家列表现拉；新商家一旦被平台探测，下次打开自动带上
+  async function loadProbes(provs) {
+    const slugs = [...new Set(provs.map(p => p.slug).filter(Boolean))];
+    const map = new Map();        // key: model_name|slug -> {n,s,lat,ln}
+    const CONC = 8;
+    for (let i = 0; i < slugs.length; i += CONC) {
+      if (_load) _load.innerHTML = '<b style="color:#e6edf3">📊 灵珑运营面板</b><br>正在读取各商家「服务状态」实测监控… ' + Math.min(i + CONC, slugs.length) + '/' + slugs.length + ' 家';
+      const batch = slugs.slice(i, i + CONC);
+      await Promise.all(batch.map(async slug => {
+        const { json } = await fetchJSON('/api/marketplace/providers/' + encodeURIComponent(slug) + '/probes?period=24h');
+        const buckets = (json && json.data && json.data.buckets) || [];
+        for (const b of buckets) {
+          const k = b.model_name + '|' + slug;
+          const a = map.get(k) || { n: 0, s: 0, lat: 0, ln: 0 };
+          a.n += b.total || 0; a.s += b.successes || 0;
+          if (b.avg_latency) { a.lat += b.avg_latency * (b.total || 0); a.ln += (b.total || 0); }
+          map.set(k, a);
+        }
+      }));
+    }
+    return map;
+  }
 
   let providers = await pageAll('/api/marketplace/providers?keyword=&sort=');
   let models = await pageAll('/api/marketplace/models');
   let gmap = (await loadGlobal()) || new Map();
   let markup = (await loadMarkup()) || 35;
+  let probeMap = await loadProbes(providers);
 
   // 建索引 + 过滤无效商家（无任何在售模型 = 服务状态列表为空）
   function reindex() {
@@ -116,17 +140,33 @@
   const cT = v => v == null || v <= 0 ? '<span style="color:#6e7681" title="样本少/统计异常">异常</span>' : '<span style="color:' + (v > 6000 ? '#f85149' : v > 3000 ? '#d29922' : '#3fb950') + '">' + (v / 1000).toFixed(1) + 's</span>';
   const cC = v => v == null || v < 0 ? '<span style="color:#6e7681">-</span>' : '<span style="color:' + (v >= 70 ? '#3fb950' : v >= 40 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>';
   const cA = v => v == null || v < 0 ? '<span style="color:#6e7681">-</span>' : '<span style="color:' + (v >= 95 ? '#3fb950' : v >= 90 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>';
-  const LOWTR = 20;   // 调用量低于此值 → 可用率样本不足、不可信
-  // 可用率(模型级)：样本太少或无数据时不给"绿色高可用"的误导，改灰+提示
-  const cAm = m => { const v = m.availability, tr = m.total_requests || 0; if (v == null || v < 0) return '<span class="muted" title="无可用率数据">无</span>'; if (tr < LOWTR) return '<span style="color:#8b949e" title="样本太少：仅 ' + tr + ' 次调用，此可用率不可信">' + Math.round(v) + '%<span style="color:#d29922;font-size:9px">?</span></span>'; return '<span style="color:' + (v >= 95 ? '#3fb950' : v >= 90 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>'; };
+  const LOWTR = 20;   // 探测样本低于此值 → 可用率样本不足、仅供参考
+  // 实测可用率(模型级)：来自"服务状态"探测(成功/总)。这是真实值，跟商家页一致
+  const probeOf = m => { const p = probeMap.get(m.model_name + '|' + m.provider_slug); return (p && p.n > 0) ? p : null; };
+  const probeAvOf = m => { const p = probeOf(m); return p ? p.s / p.n * 100 : null; };   // 排序/推荐用的数值（无实测=null）
+  const avColor = v => v >= 95 ? '#3fb950' : v >= 90 ? '#d29922' : '#f85149';
+  // 可用率显示：优先实测探测；样本少给"?"；无实测则显示平台参考值(灰+"参考")，绝不当真实可用率
+  const cAm = m => {
+    const p = probeOf(m);
+    if (p) { const v = Math.round(p.s / p.n * 100);
+      if (p.n < LOWTR) return '<span style="color:' + avColor(v) + ';opacity:.7" title="实测服务状态：24h内仅 ' + p.n + ' 次探测，成功率 ' + v + '%（样本偏少，仅参考）">' + v + '%<span style="color:#d29922;font-size:9px">?</span></span>';
+      return '<span style="color:' + avColor(v) + '" title="实测服务状态：24h ' + p.n + ' 次探测，成功率 ' + v + '%（与商家页服务状态一致）">' + v + '%</span>';
+    }
+    const v = m.availability;
+    if (v == null || v < 0) return '<span class="muted" title="无实测监控、无参考值">未监控</span>';
+    return '<span style="color:#6e7681" title="⚠ 平台参考值，该模型无实测服务状态监控，不能当作真实可用率">' + Math.round(v) + '%<span style="font-size:9px;color:#8b949e"> 参考</span></span>';
+  };
   // 商家成本：零报价(¥0)多为占位/未真正上架，明确标出，别当真实成本
   const costTxt = m => (!m.input_price && !m.output_price && !m.fixed_price) ? '<span style="color:#9a6700" title="该商家此模型报价为0，多为占位，不能作为真实成本">¥0 无报价</span>' : priceTxt(m);
+  // 商家级实测可用率：其名下所有模型探测合计(成功/总)。无任何探测 → null
+  const provProbe = p => { let n = 0, s = 0; for (const m of (modsByProv.get(p.id) || [])) { const pr = probeMap.get(m.model_name + '|' + m.provider_slug); if (pr) { n += pr.n; s += pr.s; } } return n > 0 ? { n, s, av: s / n * 100 } : null; };
   const provMaxTr = p => (modsByProv.get(p.id) || []).reduce((a, m) => Math.max(a, m.total_requests || 0), 0);
   const cP = v => v === 100 ? '<span style="color:#3fb950">100</span>' : (v === 0 || v == null) ? '<span style="color:#6e7681">未检</span>' : '<span style="color:#f85149">' + v + '</span>';
   const stars = r => { r = +r || 0; return '<span style="color:#e3b341">★</span>' + r.toFixed(1); };
-  // 推荐分：可用率60% + 评分40%(归一到百分制)；优质未订阅：高可用+高分且你还没订
-  const qScore = p => 0.6 * (p.availability >= 0 ? p.availability : 0) + 0.4 * ((p.rating || 0) / 5 * 100);
-  const isQualUnsub = p => !subs.has(p.slug) && p.availability >= 90 && (p.rating || 0) >= 4.0 && provMaxTr(p) >= LOWTR;
+  // 推荐分：实测可用率60% + 评分40%(归一到百分制)。无实测的商家可用率按其平台参考值打折(×0.7)，避免"没监控却排前面"
+  const qScore = p => { const pp = provProbe(p); const av = pp ? pp.av : (p.availability >= 0 ? p.availability * 0.7 : 0); return 0.6 * av + 0.4 * ((p.rating || 0) / 5 * 100); };
+  // 优质未订阅：必须有实测背书(足够探测样本 + 实测可用率≥90) + 高评分，且你还没订。没实测监控的一律不推荐
+  const isQualUnsub = p => { if (subs.has(p.slug)) return false; const pp = provProbe(p); return !!pp && pp.n >= LOWTR && pp.av >= 90 && (p.rating || 0) >= 4.0; };
   function guarantee(p) {
     if (p.guarantee_level === 3) return '<span class="ll-b" style="background:rgba(138,180,255,.14);color:#8ab4ff;border:1px solid rgba(138,180,255,.35)">💎 钻石 $' + (p.guarantee_amount_usd || p.deposit_usd) + '</span>';
     if (p.guarantee_level === 2) return '<span class="ll-b" style="background:rgba(227,179,65,.14);color:#e3b341;border:1px solid rgba(227,179,65,.35)">🛡 金牌 $' + (p.guarantee_amount_usd || p.deposit_usd) + '</span>';
@@ -167,7 +207,7 @@
     const sorters = {
       default: (a, b) => 0,
       score: (a, b) => qScore(b) - qScore(a),
-      avail: (a, b) => b.availability - a.availability,
+      avail: (a, b) => { const A = provProbe(a), B = provProbe(b); return (B ? B.av : -1) - (A ? A.av : -1); },
       rating: (a, b) => (b.rating || 0) - (a.rating || 0),
       subs: (a, b) => b.subscription_count - a.subscription_count,
       models: (a, b) => feedCount(b) - feedCount(a),
@@ -179,7 +219,8 @@
     const ms = (modsByProv.get(p.id) || []);
     const sub = subs.has(p.slug);
     const qu = isQualUnsub(p);
-    const noReal = ms.reduce((a, m) => Math.max(a, m.total_requests || 0), 0) < LOWTR;   // 无真实调用数据 → 可用率不可信
+    const pp = provProbe(p);                       // 商家级实测可用率（无监控=null）
+    const noReal = !pp;                            // 无任何实测服务状态监控 → 可用率不可信
     const cats = {}; ms.forEach(m => cats[m.category] = (cats[m.category] || 0) + 1);
     const catStr = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => k + ' ' + v).join(' · ');
     const logo = p.logo ? '<img src="' + esc(p.logo) + '" style="width:34px;height:34px;border-radius:9px;object-fit:cover;background:#161b22" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
@@ -207,11 +248,13 @@
       + guarantee(p)
       + (sub ? '<span class="ll-b" style="background:rgba(63,185,80,.14);color:#3fb950;border:1px solid rgba(63,185,80,.3)">已订阅</span>' : '')
       + (qu ? '<span class="ll-b" style="background:rgba(240,136,62,.16);color:#f0883e;border:1px solid rgba(240,136,62,.4)">🔥 优质未订阅</span>' : '')
-      + (noReal ? '<span class="ll-b" style="background:rgba(210,153,34,.14);color:#d29922;border:1px solid rgba(210,153,34,.4)" title="该商家暂无真实调用数据(服务状态无监控)，显示的可用率不可信">⚠ 无真实数据</span>' : '')
+      + (noReal ? '<span class="ll-b" style="background:rgba(210,153,34,.14);color:#d29922;border:1px solid rgba(210,153,34,.4)" title="该商家无实测服务状态监控，面板显示的仅为平台参考值，不可当真实可用率">⚠ 无实测监控</span>' : '')
       + '</div>'
       + '<div class="muted" style="font-size:11px">@' + esc(p.slug) + '</div>'
       + '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:11px">'
-      + '<span>可用率 ' + (noReal ? '<span style="color:#8b949e" title="无真实调用数据，可用率不可信">' + Math.round(p.availability) + '%<span style="color:#d29922">?</span></span>' : cA(p.availability)) + '</span><span>' + stars(p.rating) + '</span>'
+      + '<span>可用率 ' + (pp
+        ? '<span style="color:' + avColor(pp.av) + (pp.n < LOWTR ? ';opacity:.7' : '') + '" title="实测服务状态：24h ' + pp.n + ' 次探测，成功率 ' + Math.round(pp.av) + '%">' + Math.round(pp.av) + '%' + (pp.n < LOWTR ? '<span style="color:#d29922;font-size:9px">?</span>' : '') + '</span>'
+        : (p.availability != null && p.availability >= 0 ? '<span style="color:#6e7681" title="⚠ 平台参考值，无实测监控">' + Math.round(p.availability) + '%<span style="font-size:9px"> 参考</span></span>' : '<span class="muted">未监控</span>')) + '</span><span>' + stars(p.rating) + '</span>'
       + '<span class="muted">模型 <b style="color:#e6edf3">' + ms.length + '</b></span>'
       + '<span class="muted">订阅 ' + p.subscription_count + '</span><span class="muted">RPM ' + p.max_rpm + '</span></div>'
       + '</div></div>'
@@ -244,7 +287,7 @@
       if (S.maxTtft !== '' && (t == null || t / 1000 > +S.maxTtft)) return false;
       return true;
     });
-    const sv = m => S.sortKey === 'ttft' ? ttftOf(m) : S.sortKey === 'costnum' ? costNum(m) : S.sortKey === 'sellnum' ? sellNum(m) : S.sortKey === 'marginnum' ? (marginPct(m) ?? -Infinity) : m[S.sortKey];
+    const sv = m => S.sortKey === 'ttft' ? ttftOf(m) : S.sortKey === 'costnum' ? costNum(m) : S.sortKey === 'sellnum' ? sellNum(m) : S.sortKey === 'marginnum' ? (marginPct(m) ?? -Infinity) : S.sortKey === 'availability' ? (probeAvOf(m) ?? -1) : m[S.sortKey];
     list.sort((a, b) => { let x = sv(a), y = sv(b); if (S.sortKey === 'model_name' || S.sortKey === 'provider_slug') return (x + '').localeCompare(y + '') * S.sortDir; return ((x ?? -1) - (y ?? -1)) * S.sortDir; });
     return list;
   }
@@ -434,7 +477,7 @@
   function bind() {
     const q = s => box.querySelector(s), qa = s => box.querySelectorAll(s);
     q('#ll-close').onclick = () => box.remove();
-    q('#ll-refresh').onclick = async () => { q('#ll-refresh').textContent = '刷新中…'; providers = await pageAll('/api/marketplace/providers?keyword=&sort='); models = await pageAll('/api/marketplace/models'); gmap = (await loadGlobal()) || gmap; markup = (await loadMarkup()) || markup; ({ byId: modsByProv, valid: validProv, dropped: droppedProv } = reindex()); subs = subSet(); render(); };
+    q('#ll-refresh').onclick = async () => { q('#ll-refresh').textContent = '刷新中…'; providers = await pageAll('/api/marketplace/providers?keyword=&sort='); models = await pageAll('/api/marketplace/models'); gmap = (await loadGlobal()) || gmap; markup = (await loadMarkup()) || markup; ({ byId: modsByProv, valid: validProv, dropped: droppedProv } = reindex()); probeMap = await loadProbes(providers); subs = subSet(); render(); };
     qa('[data-view]').forEach(e => e.onclick = () => { S.view = e.dataset.view; render(); });
     const keepFocus = (id, key) => { const el = q(id); if (!el) return; el.oninput = e => { S[key] = e.target.value; const p = e.target.selectionStart; render(); const n = q(id); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (x) {} } }; };
     if (S.view === 'prov') {
