@@ -116,11 +116,17 @@
   const cT = v => v == null || v <= 0 ? '<span style="color:#6e7681" title="样本少/统计异常">异常</span>' : '<span style="color:' + (v > 6000 ? '#f85149' : v > 3000 ? '#d29922' : '#3fb950') + '">' + (v / 1000).toFixed(1) + 's</span>';
   const cC = v => v == null || v < 0 ? '<span style="color:#6e7681">-</span>' : '<span style="color:' + (v >= 70 ? '#3fb950' : v >= 40 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>';
   const cA = v => v == null || v < 0 ? '<span style="color:#6e7681">-</span>' : '<span style="color:' + (v >= 95 ? '#3fb950' : v >= 90 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>';
+  const LOWTR = 20;   // 调用量低于此值 → 可用率样本不足、不可信
+  // 可用率(模型级)：样本太少或无数据时不给"绿色高可用"的误导，改灰+提示
+  const cAm = m => { const v = m.availability, tr = m.total_requests || 0; if (v == null || v < 0) return '<span class="muted" title="无可用率数据">无</span>'; if (tr < LOWTR) return '<span style="color:#8b949e" title="样本太少：仅 ' + tr + ' 次调用，此可用率不可信">' + Math.round(v) + '%<span style="color:#d29922;font-size:9px">?</span></span>'; return '<span style="color:' + (v >= 95 ? '#3fb950' : v >= 90 ? '#d29922' : '#f85149') + '">' + Math.round(v) + '%</span>'; };
+  // 商家成本：零报价(¥0)多为占位/未真正上架，明确标出，别当真实成本
+  const costTxt = m => (!m.input_price && !m.output_price && !m.fixed_price) ? '<span style="color:#9a6700" title="该商家此模型报价为0，多为占位，不能作为真实成本">¥0 无报价</span>' : priceTxt(m);
+  const provMaxTr = p => (modsByProv.get(p.id) || []).reduce((a, m) => Math.max(a, m.total_requests || 0), 0);
   const cP = v => v === 100 ? '<span style="color:#3fb950">100</span>' : (v === 0 || v == null) ? '<span style="color:#6e7681">未检</span>' : '<span style="color:#f85149">' + v + '</span>';
   const stars = r => { r = +r || 0; return '<span style="color:#e3b341">★</span>' + r.toFixed(1); };
   // 推荐分：可用率60% + 评分40%(归一到百分制)；优质未订阅：高可用+高分且你还没订
   const qScore = p => 0.6 * (p.availability >= 0 ? p.availability : 0) + 0.4 * ((p.rating || 0) / 5 * 100);
-  const isQualUnsub = p => !subs.has(p.slug) && p.availability >= 90 && (p.rating || 0) >= 4.0;
+  const isQualUnsub = p => !subs.has(p.slug) && p.availability >= 90 && (p.rating || 0) >= 4.0 && provMaxTr(p) >= LOWTR;
   function guarantee(p) {
     if (p.guarantee_level === 3) return '<span class="ll-b" style="background:rgba(138,180,255,.14);color:#8ab4ff;border:1px solid rgba(138,180,255,.35)">💎 钻石 $' + (p.guarantee_amount_usd || p.deposit_usd) + '</span>';
     if (p.guarantee_level === 2) return '<span class="ll-b" style="background:rgba(227,179,65,.14);color:#e3b341;border:1px solid rgba(227,179,65,.35)">🛡 金牌 $' + (p.guarantee_amount_usd || p.deposit_usd) + '</span>';
@@ -173,6 +179,7 @@
     const ms = (modsByProv.get(p.id) || []);
     const sub = subs.has(p.slug);
     const qu = isQualUnsub(p);
+    const noReal = ms.reduce((a, m) => Math.max(a, m.total_requests || 0), 0) < LOWTR;   // 无真实调用数据 → 可用率不可信
     const cats = {}; ms.forEach(m => cats[m.category] = (cats[m.category] || 0) + 1);
     const catStr = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => k + ' ' + v).join(' · ');
     const logo = p.logo ? '<img src="' + esc(p.logo) + '" style="width:34px;height:34px;border-radius:9px;object-fit:cover;background:#161b22" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
@@ -186,7 +193,7 @@
         const d = m.description ? '<div class="muted" style="font-size:11px;margin-top:1px">' + esc(clamp(m.description, 60)) + '</div>' : '';
         return '<div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between">'
           + '<div style="min-width:0"><span style="font-weight:600">' + esc(m.model_name) + '</span> <span class="muted" style="font-size:10px">' + esc(m.category) + '</span>' + d + '</div>'
-          + '<div style="text-align:right;white-space:nowrap;flex-shrink:0"><span style="color:#adbac7">' + priceTxt(m) + '</span>　首字 ' + cT(ttftOf(m)) + '　可用 ' + cA(m.availability) + '　缓存 ' + cC(m.cache_hit_rate) + (sp.none ? '' : '　售 <span style="color:' + (sp.custom ? '#e3b341' : '#8b949e') + '">' + sp.txt + '</span>') + (marginPct(m) != null ? '　利 ' + cMargin(m) : '') + '</div>'
+          + '<div style="text-align:right;white-space:nowrap;flex-shrink:0"><span style="color:#adbac7">' + costTxt(m) + '</span>　首字 ' + cT(ttftOf(m)) + '　可用 ' + cAm(m) + '　缓存 ' + cC(m.cache_hit_rate) + (sp.none ? '' : '　售 <span style="color:' + (sp.custom ? '#e3b341' : '#8b949e') + '">' + sp.txt + '</span>') + (marginPct(m) != null ? '　利 ' + cMargin(m) : '') + '</div>'
           + '</div>';
       }).join('') + '</div>';
     }
@@ -200,10 +207,11 @@
       + guarantee(p)
       + (sub ? '<span class="ll-b" style="background:rgba(63,185,80,.14);color:#3fb950;border:1px solid rgba(63,185,80,.3)">已订阅</span>' : '')
       + (qu ? '<span class="ll-b" style="background:rgba(240,136,62,.16);color:#f0883e;border:1px solid rgba(240,136,62,.4)">🔥 优质未订阅</span>' : '')
+      + (noReal ? '<span class="ll-b" style="background:rgba(210,153,34,.14);color:#d29922;border:1px solid rgba(210,153,34,.4)" title="该商家暂无真实调用数据(服务状态无监控)，显示的可用率不可信">⚠ 无真实数据</span>' : '')
       + '</div>'
       + '<div class="muted" style="font-size:11px">@' + esc(p.slug) + '</div>'
       + '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;font-size:11px">'
-      + '<span>可用率 ' + cA(p.availability) + '</span><span>' + stars(p.rating) + '</span>'
+      + '<span>可用率 ' + (noReal ? '<span style="color:#8b949e" title="无真实调用数据，可用率不可信">' + Math.round(p.availability) + '%<span style="color:#d29922">?</span></span>' : cA(p.availability)) + '</span><span>' + stars(p.rating) + '</span>'
       + '<span class="muted">模型 <b style="color:#e6edf3">' + ms.length + '</b></span>'
       + '<span class="muted">订阅 ' + p.subscription_count + '</span><span class="muted">RPM ' + p.max_rpm + '</span></div>'
       + '</div></div>'
@@ -391,7 +399,7 @@
         const key = m.provider_id + '|' + m.model_name;
         const spCell = sp.none ? '<span class="muted">—</span>' : '<span class="llprice" data-key="' + esc(key) + '" title="点击改价" style="cursor:pointer;color:' + (sp.custom ? '#e3b341' : '#adbac7') + '">' + sp.txt + (sp.custom ? ' <span style="font-size:10px">手动</span>' : '') + ' <span style="color:#6e7681">✎</span></span>';
         const shCell = sh === 'none' ? '<span class="muted">—</span>' : '<span class="llsh" data-key="' + esc(key) + '" title="点击上架/下架" style="cursor:pointer;text-decoration:underline dotted">' + (sh === 'on' ? '<span style="color:#3fb950">✓上架</span>' : '<span style="color:#f85149">✗下架</span>') + '</span>';
-        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + priceTxt(m) + '</td><td>' + cMargin(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cA(m.availability) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
+        h += '<tr style="' + (band ? 'background:rgba(120,170,255,.05)' : '') + '"><td style="font-weight:600">' + esc(m.model_name) + '<div class="muted" style="font-size:10px">' + esc(m.category) + '</div></td><td style="max-width:150px">' + di + '</td><td><a href="/providers/' + esc(m.provider_slug) + '" target="_blank">' + esc(m.provider_slug) + ' ↗</a></td><td style="text-align:center">' + (isSub ? '<span style="color:#3fb950">✓</span>' : '<span class="muted">—</span>') + '</td><td>' + costTxt(m) + '</td><td>' + cMargin(m) + '</td><td>' + spCell + '</td><td>' + shCell + '</td><td>' + cT(ttftOf(m)) + '</td><td>' + cC(m.cache_hit_rate) + '</td><td>' + cAm(m) + '</td><td>' + cP(m.probe_score) + '</td><td class="muted">' + (m.total_requests || 0) + '</td></tr>';
       }
       h += '</tbody></table></div>';
     }
