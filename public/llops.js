@@ -406,28 +406,66 @@
     ov.querySelector('.ll-o').onclick = async () => { ov.remove(); await doUnsubscribe(p); };
   }
 
-  // ---------- 连通性测试（只测已订阅：往 /pg 发一次真实调用，看通/报错；不动任何订阅）----------
+  // ---------- 连通性测试（已订阅直接测；未订阅“临时订阅→测→退订”，仅退本次新订的）----------
   let lastList = [];                         // 最近一次模型视图渲染出的（已过滤/排序）列表，供批量测试用
   const testRes = new Map();                 // key: provider_id|model_name -> {state,code,msg,ts}
   const tkey = m => m.provider_id + '|' + m.model_name;
-  async function testModel(m) {
-    if (!subs.has(m.provider_slug)) { testRes.set(tkey(m), { state: 'skip', msg: '未订阅：实时测试需先订阅该商家；可先看左边「可用率」的实测服务状态' }); return; }
+  const provOf = id => providers.find(p => p.id === id) || { id, slug: '', company_name: '#' + id };
+  const subReq = id => fetch('/api/marketplace/subscribe', { method: 'POST', headers: wH(), body: JSON.stringify({ provider_id: id }) }).then(r => r.json()).catch(e => ({ success: false, message: e.message }));
+  const unsubReq = id => fetch('/api/marketplace/subscribe/' + id, { method: 'DELETE', headers: wH() }).then(r => r.json()).catch(e => ({ success: false, message: e.message }));
+  const reloadSubs = async () => { const g = await loadGlobal(); if (g) { gmap = g; subs = subSet(); } };
+  // 只发一次调用（假定分组已存在=已订阅），写入结果
+  async function rawTest(m) {
     testRes.set(tkey(m), { state: 'run' });
     try {
       const r = await fetch('/pg/chat/completions', { method: 'POST', headers: wH(), body: JSON.stringify({ model: m.model_name, group: 'provider:' + m.provider_slug, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1, stream: false }) });
       let j = null; try { j = await r.json(); } catch (e) {}
       if (r.ok && j && Array.isArray(j.choices)) testRes.set(tkey(m), { state: 'ok', ts: Date.now() });
-      else { const err = (j && (j.error || j)) || {}; testRes.set(tkey(m), { state: 'err', code: err.code || r.status, msg: err.message || j && j.message || ('HTTP ' + r.status), ts: Date.now() }); }
+      else { const err = (j && (j.error || j)) || {}; testRes.set(tkey(m), { state: 'err', code: err.code || r.status, msg: err.message || (j && j.message) || ('HTTP ' + r.status), ts: Date.now() }); }
     } catch (e) { testRes.set(tkey(m), { state: 'err', code: 'net', msg: '网络错误：' + e.message, ts: Date.now() }); }
   }
-  // 测试结果渲染（放在"测试"列）
+  // 对“同一未订阅商家”的一组模型：临时订阅→逐个测→退订（wasSubbed 来自开测前的快照，绝不退你手动订阅的）
+  async function tempSubTestGroup(providerId, models, wasSubbed, pt) {
+    const p = provOf(providerId); const slug = p.slug;
+    const run = async m => { pt && pt.set('测试 ' + m.model_name + ' @' + slug + '…'); await rawTest(m); pt && pt.after && pt.after(m); };
+    if (wasSubbed) { for (const m of models) await run(m); return { left: false }; }
+    pt && pt.set('临时订阅 ' + slug + '…');
+    const rs = await subReq(providerId);
+    if (!rs.success) { for (const m of models) { testRes.set(tkey(m), { state: 'err', code: 'sub_fail', msg: '临时订阅失败：' + (rs.message || '') + '（可能需官方页确认/有押金），未测' }); pt && pt.after && pt.after(m); } return { left: false }; }
+    let left = false;
+    try {
+      await reloadSubs();                                   // 让 /pg 分组就绪
+      for (const m of models) await run(m);
+    } finally {
+      let ok = false;
+      for (let i = 0; i < 3 && !ok; i++) { pt && pt.set('退订 ' + slug + '…'); const u = await unsubReq(providerId); ok = !!u.success; if (!ok) await sleep(500); }
+      await reloadSubs();
+      if (!ok) { left = true; toast('⚠ ' + slug + ' 退订失败，请手动到官方页取消订阅！', false); }
+    }
+    return { left };
+  }
+  // 单个测试入口：已订阅直接测；未订阅弹确认（涉及临时订阅），确认后临时订阅→测→退订
+  async function testModel(m) {
+    if (subs.has(m.provider_slug)) { await rawTest(m); render(); return; }
+    askTempTest(m);
+  }
+  function askTempTest(m) {
+    const ov = modal('<b>测试未订阅模型</b><div class="muted" style="margin:8px 0">商家 <b style="color:#e6edf3">' + esc(m.provider_slug) + '</b>　模型 <b style="color:#e6edf3">' + esc(m.model_name) + '</b></div>该商家你还没订阅。测试需要：<b>临时订阅</b>该商家 → 发一次真实调用 → <b>立即退订</b>。<div class="muted" style="font-size:11px;margin-top:6px">· 只会退订这次为测试临时新订的，<b style="color:#e6edf3">绝不动你手动订阅的</b>。<br>· 订阅本身不额外扣费、调用约几个 token；期间该商家模型会<b>短暂上架到你分站几秒</b>，测完随退订自动下架。<br>· 退订若失败会重试并弹红字提醒你手动退。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#1f6feb;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">临时订阅并测试</button></div>');
+    ov.querySelector('.ll-c').onclick = () => ov.remove();
+    ov.querySelector('.ll-o').onclick = async () => {
+      ov.remove(); const pt = progressToast();
+      await tempSubTestGroup(m.provider_id, [m], false, { set: t => pt.set(t) });
+      pt.done(); render();
+      const r = testRes.get(tkey(m)); toast(r && r.state === 'ok' ? '测试完成：✓通' : '测试完成：' + (r ? ('✗ ' + (r.code || '') + ' ' + (r.msg || '')) : '无结果'), r && r.state === 'ok');
+    };
+  }
+  // 测试结果渲染（每个模型都有“测”，含未订阅）
   function cTest(m) {
-    if (!subs.has(m.provider_slug)) return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="未订阅：实时测试需先订阅该商家。可参考左边「可用率」实测服务状态" style="cursor:help;color:#6e7681;font-size:11px">—</span>';
     const r = testRes.get(tkey(m));
-    if (!r) return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="点我发一次真实调用，测是否连通" style="cursor:pointer;color:#58a6ff;text-decoration:underline dotted;font-size:11px">测</span>';
+    const un = !subs.has(m.provider_slug);
+    if (!r) return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="' + (un ? '未订阅：点测会临时订阅→测→退订（仅退本次新订的）' : '点我发一次真实调用，测是否连通') + '" style="cursor:pointer;color:#58a6ff;text-decoration:underline dotted;font-size:11px">测' + (un ? '<span style="color:#8b949e">*</span>' : '') + '</span>';
     if (r.state === 'run') return '<span style="color:#8b949e;font-size:11px">测中…</span>';
     if (r.state === 'ok') return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="连通正常（点可重测）" style="cursor:pointer;color:#3fb950">✓通</span>';
-    if (r.state === 'skip') return '<span style="color:#6e7681;font-size:11px" title="' + esc(r.msg) + '">—</span>';
     return '<span class="lltest" data-key="' + esc(tkey(m)) + '" title="' + esc((r.code ? '[' + r.code + '] ' : '') + (r.msg || '') + '（点可重测）') + '" style="cursor:pointer;color:#f85149;font-size:11px">✗' + esc(String(r.code || '错')) + '</span>';
   }
   function progressToast() {
@@ -436,19 +474,33 @@
     document.body.appendChild(el);
     return { set: t => el.textContent = t, done: () => el.remove() };
   }
+  // 批量测试当前列表（全部模型）：已订阅直接测；未订阅按商家分组临时订阅→测→退订
   async function batchTest(list) {
-    const targets = list.filter(m => subs.has(m.provider_slug));
-    const skipped = list.length - targets.length;
-    if (!targets.length) return toast('当前列表没有「已订阅」的模型可测（未订阅的不能实时测）', false);
-    const ov = modal('<b>批量测试连通性</b><div class="muted" style="margin:8px 0">将对当前列表里 <b style="color:#e6edf3">' + targets.length + '</b> 个<b>已订阅</b>模型各发一次真实调用，看是否连通/报错。' + (skipped ? '另有 <b>' + skipped + '</b> 个未订阅，会自动跳过。' : '') + '</div><div class="muted" style="font-size:11px">每次调用约消耗几个 token（几乎不花钱），不改动任何订阅或上架状态。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#1f6feb;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">开始测试 ' + targets.length + ' 个</button></div>');
+    if (!list.length) return toast('当前列表为空', false);
+    const preSubbed = list.filter(m => subs.has(m.provider_slug));
+    const unsub = list.filter(m => !subs.has(m.provider_slug));
+    const groups = new Map();                       // provider_id -> [models]（未订阅，按商家分组，一次订阅测多个）
+    for (const m of unsub) { if (!groups.has(m.provider_id)) groups.set(m.provider_id, []); groups.get(m.provider_id).push(m); }
+    const total = list.length, gN = groups.size;
+    const ov = modal('<b>批量测试连通性 · 当前列表 ' + total + ' 个</b><div class="muted" style="margin:8px 0">· <b style="color:#e6edf3">' + preSubbed.length + '</b> 个已订阅：直接测。<br>· <b style="color:#e6edf3">' + unsub.length + '</b> 个未订阅（涉及 <b style="color:#e6edf3">' + gN + '</b> 家商家）：逐家<b>临时订阅→测→退订</b>。</div><div class="muted" style="font-size:11px">· 只退订这次临时新订的，<b style="color:#e6edf3">绝不动你手动订阅的</b>。<br>· 每次调用约几个 token；临时订阅期间该商家模型会<b>短暂上架几秒</b>。<br>· <b style="color:#e6edf3">测试期间请勿关闭本页</b>，以免商家被留在已订阅状态。退订失败会重试并提醒。</div><div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end"><button class="ll-c" style="background:#21262d;color:#c9d1d9;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">取消</button><button class="ll-o" style="background:#1f6feb;color:#fff;border:0;border-radius:7px;padding:6px 14px;cursor:pointer">开始测试 ' + total + ' 个</button></div>');
     ov.querySelector('.ll-c').onclick = () => ov.remove();
     ov.querySelector('.ll-o').onclick = async () => {
       ov.remove();
-      const pt = progressToast(); let done = 0, ok = 0, err = 0; const CONC = 4;
-      for (let i = 0; i < targets.length; i += CONC) {
-        await Promise.all(targets.slice(i, i + CONC).map(async m => { await testModel(m); done++; const r = testRes.get(tkey(m)); if (r && r.state === 'ok') ok++; else err++; pt.set('测试中… ' + done + '/' + targets.length + '（通 ' + ok + '，异常 ' + err + '）'); }));
+      const preSubsSnap = new Set(subs);              // 快照：只有不在快照里的、且本次订阅的才会被退订
+      const pt = progressToast(); let done = 0, ok = 0, err = 0; const leftSubbed = [];
+      const bump = () => pt.set('测试中… ' + done + '/' + total + '（通 ' + ok + '，异常 ' + err + '）');
+      const tally = m => { done++; const r = testRes.get(tkey(m)); if (r && r.state === 'ok') ok++; else err++; bump(); };
+      const CONC = 4;                                 // 已订阅的并发测
+      for (let i = 0; i < preSubbed.length; i += CONC) {
+        await Promise.all(preSubbed.slice(i, i + CONC).map(async m => { await rawTest(m); tally(m); }));
       }
-      pt.done(); render(); toast('测试完成：通 ' + ok + '，异常 ' + err + (skipped ? '，跳过未订阅 ' + skipped : ''), err === 0);
+      for (const [pid, models] of groups) {           // 未订阅的按商家顺序处理
+        const wasSubbed = preSubsSnap.has(provOf(pid).slug);
+        const res = await tempSubTestGroup(pid, models, wasSubbed, { set: t => pt.set(t), after: tally });
+        if (res.left) leftSubbed.push(provOf(pid).slug);
+      }
+      pt.done(); await reloadSubs(); render();
+      toast('测试完成：通 ' + ok + '，异常 ' + err + (leftSubbed.length ? '｜⚠ 未成功退订：' + leftSubbed.join('、') : ''), err === 0 && !leftSubbed.length);
     };
   }
 
@@ -528,7 +580,7 @@
         + '<span style="margin-left:8px">可用率≥<input id="la" type="number" value="' + S.minAvail + '" style="width:48px">%　缓存≥<input id="lc" type="number" value="' + S.minCache + '" style="width:48px">%　首字≤<input id="lt" type="number" value="' + S.maxTtft + '" style="width:48px">s</span>'
         + '<label><input type="checkbox" id="lz"' + (S.hideZero ? ' checked' : '') + '> 隐藏0调用</label>'
         + '<label><input type="checkbox" id="lb"' + (S.hideBad ? ' checked' : '') + '> 隐藏异常首字</label>'
-        + '<button id="lbatch" title="对当前列表里已订阅的模型逐个发一次真实调用，测连通/报错" style="margin-left:auto;background:#1f6feb;color:#fff;border:0;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px">🔬 批量测当前</button>'
+        + '<button id="lbatch" title="对当前列表全部模型逐个测连通：已订阅直接测；未订阅临时订阅→测→退订（仅退本次新订的）" style="margin-left:auto;background:#1f6feb;color:#fff;border:0;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px">🔬 批量测当前</button>'
         + '<span class="muted" style="margin-left:8px">' + list.length + ' / ' + models.length + ' 渠道</span></div></div>'
         + '<div class="scroll"><table><thead><tr>' + th('模型', 'model_name') + '<th>简介</th>' + th('商家', 'provider_slug') + '<th>订阅</th>' + th('商家成本', 'costnum') + th('利润率', 'marginnum') + th('分站售价', 'sellnum') + '<th>上架</th>' + '<th>测试</th>' + th('首字', 'ttft') + th('缓存', 'cache_hit_rate') + th('可用率', 'availability') + th('探测', 'probe_score') + th('调用量', 'total_requests') + '</tr></thead><tbody>';
       let prev = null, band = 0;
